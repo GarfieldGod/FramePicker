@@ -1,6 +1,7 @@
 import os
 import cv2
-from typing import Union
+from typing import Union, Tuple
+
 
 class VideoHolder:
     video = None
@@ -9,6 +10,8 @@ class VideoHolder:
     total_sec = None
     total_frame = None
     resize_ = None
+    crop_ = None
+    frame_origin_size = None
 
     def __init__(self, video_path):
         if not os.path.exists(video_path):
@@ -23,9 +26,20 @@ class VideoHolder:
         self.video = cv2.VideoCapture(self.video_path)
         if not self.video.isOpened():
             raise RuntimeError(f"无法打开视频：{self.video_path}")
+
+        self.init_video_info()
+        self.init_frame_info()
+
+    def init_video_info(self):
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.total_frame = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
         self.total_sec = self.total_frame / self.fps
+
+    def init_frame_info(self):
+        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ret, frame = self.video.read()
+        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.frame_origin_size = frame.shape[:2]
 
     def release(self):
         if self.video is not None:
@@ -122,6 +136,18 @@ class VideoHolder:
             if self.resize_ is not None:
                 frame = cv2.resize(frame, self.resize_, interpolation=cv2.INTER_AREA)
 
+            if self.crop_ is not None:
+                x1, y1, x2, y2 = self.crop_
+                frame_height, frame_width = frame.shape[:2]
+                x1 = max(0, min(x1, frame_width - 1))
+                x2 = max(x1 + 1, min(x2, frame_width))
+                y1 = max(0, min(y1, frame_height - 1))
+                y2 = max(y1 + 1, min(y2, frame_height))
+
+                frame = frame[y1:y2, x1:x2]
+                print(
+                    f"帧 {current_frame} 裁剪区域：({x1}, {y1}) → ({x2}, {y2})，裁剪后尺寸：{frame.shape[1]}×{frame.shape[0]}")
+
             frame_filename = f"{frame_prefix}_{save_count:04d}_{current_frame:04d}.{frame_format}"
             frame_path = os.path.join(output_dir, frame_filename)
             cv2.imwrite(frame_path, frame)
@@ -134,6 +160,9 @@ class VideoHolder:
                 break
 
         print(f"\n获取帧成功！总计保存 {save_count} 帧，路径：{output_dir}")
+
+    def crop(self, crop_area=None):
+        self.crop_ = crop_area
 
     def resize(self, size=None):
         self.resize_ = size
@@ -156,6 +185,18 @@ class VideoHolder:
             raise TypeError(f"时间类型错误：{type(time_val)}")
 
 
+def get_center_crop_region(frame_shape: Tuple[int, int], crop_size: Tuple[int, int]) -> Tuple[int, int, int, int]:
+    frame_h, frame_w = frame_shape
+    crop_w, crop_h = crop_size
+
+    # 计算居中坐标
+    x1 = (frame_w - crop_w) // 2
+    y1 = (frame_h - crop_h) // 2
+    x2 = x1 + crop_w
+    y2 = y1 + crop_h
+
+    return (x1, y1, x2, y2)
+
 if __name__ == "__main__":
 
     video_path = "input/input.mp4"
@@ -164,6 +205,7 @@ if __name__ == "__main__":
     print(f"fps: {video_holder.fps}")
     print(f"total_sec: {video_holder.total_sec}")
     print(f"total_frame: {video_holder.total_frame}")
+    print(f"frame_origin_size: {video_holder.frame_origin_size}")
 
     time = ("00:00:00", "00:00:05")
 
@@ -174,6 +216,11 @@ if __name__ == "__main__":
     )
 
     video_holder.resize()
+
+    frame_shape = video_holder.frame_origin_size
+    crop_region = get_center_crop_region(frame_shape, (800, 800))
+    video_holder.crop(crop_region)
+
     video_holder.get_frames_specify_num(
         time_segment=time, num_frames=7,
         output_dir="output/specify_clip", frame_prefix="specify_clip",
