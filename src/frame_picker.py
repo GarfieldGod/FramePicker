@@ -3,7 +3,7 @@ import cv2
 from typing import Union, Tuple
 
 
-class VideoHolder:
+class FramePicker:
     video = None
     video_path = None
     fps = None
@@ -177,26 +177,26 @@ def get_center_crop_region(frame_shape: Tuple[int, int], crop_size: Tuple[int, i
 if __name__ == "__main__":
 
     video_path = "input/input.mp4"
-    video_holder = VideoHolder(video_path)
+    frame_picker = FramePicker(video_path)
 
-    print(f"fps: {video_holder.fps}")
-    print(f"total_sec: {video_holder.total_sec}")
-    print(f"total_frame: {video_holder.total_frame}")
-    print(f"frame_origin_size: {video_holder.frame_origin_size}")
+    print(f"fps: {frame_picker.fps}")
+    print(f"total_sec: {frame_picker.total_sec}")
+    print(f"total_frame: {frame_picker.total_frame}")
+    print(f"frame_origin_size: {frame_picker.frame_origin_size}")
 
-    video_holder.decode()
+    frame_picker.decode()
 
     time = ("00:00:00", "00:00:05")
 
-    video_holder.resize((640, 480))
-    index_list = video_holder.get_frames_index_by_interval(time_segment=time, frame_interval=20)
-    video_holder.download_frames(frame_index_list=index_list, output_dir="output/interval_clip", frame_prefix="interval_clip",frame_format="png")
+    frame_picker.resize((640, 480))
+    index_list = frame_picker.get_frames_index_by_interval(time_segment=time, frame_interval=20)
+    frame_picker.download_frames(frame_index_list=index_list, output_dir="output/interval_clip", frame_prefix="interval_clip",frame_format="png")
 
-    video_holder.resize()
+    frame_picker.resize()
 
-    frame_shape = video_holder.frame_origin_size
+    frame_shape = frame_picker.frame_origin_size
     crop_region = get_center_crop_region(frame_shape, (800, 800))
-    video_holder.crop(crop_region)
+    frame_picker.crop(crop_region)
 
-    index_list = video_holder.get_frames_index_by_specify_num(time_segment=time, num_frames=7)
-    video_holder.download_frames(frame_index_list=index_list, output_dir = "output/specify_clip", frame_prefix = "specify_clip",frame_format="png")
+    index_list = frame_picker.get_frames_index_by_specify_num(time_segment=time, num_frames=7)
+    frame_picker.download_frames(frame_index_list=index_list, output_dir = "output/specify_clip", frame_prefix = "specify_clip",frame_format="png")
