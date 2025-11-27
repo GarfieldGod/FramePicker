@@ -12,6 +12,7 @@ class VideoHolder:
     resize_ = None
     crop_ = None
     frame_origin_size = None
+    decoded_frames = None
 
     def __init__(self, video_path):
         if not os.path.exists(video_path):
@@ -22,20 +23,17 @@ class VideoHolder:
     def __del__(self):
         self.release()
 
+    # public-----------------------------------------------------------
     def open_video(self):
         self.video = cv2.VideoCapture(self.video_path)
         if not self.video.isOpened():
             raise RuntimeError(f"无法打开视频：{self.video_path}")
 
-        self.init_video_info()
-        self.init_frame_info()
-
-    def init_video_info(self):
+        # init_video_info
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.total_frame = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
         self.total_sec = self.total_frame / self.fps
-
-    def init_frame_info(self):
+        # init_frame_info
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ret, frame = self.video.read()
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -46,126 +44,106 @@ class VideoHolder:
             self.video.release()
             self.video = None
 
-    def get_frames_by_interval(self,
-        time_segment, frame_interval=1,
-        output_dir="output", frame_prefix="video_clip", frame_format="png", time_line=False,
-    ):
-        if not os.path.exists(self.video_path):
-            raise FileNotFoundError(f"视频文件不存在：{self.video_path}")
+    def decode(self):
+        frames = {}
+        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        for frame_index in range(self.total_frame):
+            ret, frame = self.video.read()
+            if not ret:
+                print(f"警告：解码帧 {frame_index} 失败，跳过")
+                continue
+            frames[frame_index] = frame
+        self.decoded_frames = frames
 
+    def get_frames_index_by_interval(self, time_segment, frame_interval=1):
         if frame_interval < 1:
             raise ValueError("帧间隔必须 ≥ 1")
 
-        os.makedirs(output_dir, exist_ok=True)
+        start_frame, end_frame = self.get_start_end_frame_index(time_segment)
 
-        start_time, end_time = time_segment
-        print(f"\n处理时间片段：{start_time} → {end_time}")
-        start_sec = self.time_to_seconds(start_time)
-        end_sec = self.time_to_seconds(end_time)
-
-        if start_sec < 0 or end_sec <= start_sec or end_sec > self.total_sec:
-            raise ValueError(f"警告：片段时间无效")
-
-        start_frame = int(round(start_sec * self.fps))
-        end_frame = int(round(end_sec * self.fps))
-
-        frame_list = []
+        frame_index_list = []
         for frame_idx in range(start_frame, end_frame + 1, frame_interval):
-            frame_list.append(frame_idx)
+            frame_index_list.append(frame_idx)
 
-        print(frame_list)
+        return frame_index_list
 
-        self.get_frames(
-            frame_list,
-            output_dir, frame_prefix, frame_format)
-
-    def get_frames_specify_num(self,
-        time_segment, num_frames,
-        output_dir="output", frame_prefix="video_clip", frame_format="png"
-    ):
-        if not os.path.exists(self.video_path):
-            raise FileNotFoundError(f"视频文件不存在：{self.video_path}")
-
+    def get_frames_index_by_specify_num(self, time_segment, num_frames):
         if num_frames < 1:
             raise ValueError("帧数量必须 ≥ 1")
 
-        os.makedirs(output_dir, exist_ok=True)
-
-        start_time, end_time = time_segment
-        print(f"\n处理时间片段：{start_time} → {end_time}")
-        start_sec = self.time_to_seconds(start_time)
-        end_sec = self.time_to_seconds(end_time)
-
-        if start_sec < 0 or end_sec <= start_sec or end_sec > self.total_sec:
-            raise ValueError(f"警告：片段时间无效")
-
-        start_frame = int(round(start_sec * self.fps))
-        end_frame = int(round(end_sec * self.fps))
+        start_frame, end_frame = self.get_start_end_frame_index(time_segment)
 
         if num_frames > end_frame - start_frame:
             raise ValueError("指定帧数量超过片段总帧数")
 
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
         skip_frame_count = (end_frame - start_frame) // (num_frames - 1)
-        frame_list = []
+
+        frame_index_list = []
         current_frame = start_frame
         while current_frame <= end_frame:
-            frame_list.append(current_frame)
+            frame_index_list.append(current_frame)
             current_frame += skip_frame_count
 
-        self.get_frames(
-            frame_list,
-            output_dir, frame_prefix, frame_format)
-
-    def get_frames(self, frame_list, output_dir, frame_prefix, frame_format):
-        current_frame = -1
-        save_count = 0
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        for frame_index in range(self.total_frame):
-            current_frame += 1
-            if current_frame not in frame_list:
-                self.video.read()
-                continue
-
-            ret, frame = self.video.read()
-            if not ret:
-                print(f"警告：读取帧 {current_frame} 失败，跳过")
-                continue
-
-            if self.resize_ is not None:
-                frame = cv2.resize(frame, self.resize_, interpolation=cv2.INTER_AREA)
-
-            if self.crop_ is not None:
-                x1, y1, x2, y2 = self.crop_
-                frame_height, frame_width = frame.shape[:2]
-                x1 = max(0, min(x1, frame_width - 1))
-                x2 = max(x1 + 1, min(x2, frame_width))
-                y1 = max(0, min(y1, frame_height - 1))
-                y2 = max(y1 + 1, min(y2, frame_height))
-
-                frame = frame[y1:y2, x1:x2]
-                print(
-                    f"帧 {current_frame} 裁剪区域：({x1}, {y1}) → ({x2}, {y2})，裁剪后尺寸：{frame.shape[1]}×{frame.shape[0]}")
-
-            frame_filename = f"{frame_prefix}_{save_count:04d}_{current_frame:04d}.{frame_format}"
-            frame_path = os.path.join(output_dir, frame_filename)
-            cv2.imwrite(frame_path, frame)
-
-            save_count += 1
-            print(f"已保存：{frame_path}（对应时间：{current_frame / self.fps:.2f} 秒）")
-
-            if frame_list[len(frame_list) - 1] == current_frame:
-                print("已保存所有帧数，跳过后续帧")
-                break
-
-        print(f"\n获取帧成功！总计保存 {save_count} 帧，路径：{output_dir}")
+        return frame_index_list
 
     def crop(self, crop_area=None):
         self.crop_ = crop_area
 
     def resize(self, size=None):
         self.resize_ = size
+
+    def download_frames(self, frame_index_list, output_dir, frame_prefix, frame_format):
+        os.makedirs(output_dir, exist_ok=True)
+        save_count = 0
+        for frame_index in frame_index_list:
+            if frame_index not in self.decoded_frames:
+                print(f"警告：读取帧 {frame_index} 失败，跳过")
+                continue
+
+            frame = self.decoded_frames[frame_index]
+            frame = self.apply_resize(frame)
+            frame = self.apply_crop(frame)
+
+            frame_filename = f"{frame_prefix}_{save_count:04d}_{frame_index:04d}.{frame_format}"
+            frame_path = os.path.join(output_dir, frame_filename)
+            cv2.imwrite(frame_path, frame)
+
+            save_count += 1
+            print(f"下载：{frame_path}（对应时间：{frame_index / self.fps:.2f} 秒）")
+
+        print(f"\n下载帧成功！总计保存 {save_count} 帧，路径：{output_dir}")
+
+    # private-----------------------------------------------------------
+    def get_start_end_frame_index(self, time_segment):
+        start_time, end_time = time_segment
+        start_sec = self.time_to_seconds(start_time)
+        end_sec = self.time_to_seconds(end_time)
+
+        if start_sec < 0 or end_sec <= start_sec or end_sec > self.total_sec:
+            raise ValueError(f"警告：片段时间无效")
+
+        start_frame = int(round(start_sec * self.fps))
+        end_frame = int(round(end_sec * self.fps))
+        return start_frame, end_frame
+
+    def apply_resize(self, frame):
+        if self.resize_ is not None:
+            frame = cv2.resize(frame, self.resize_, interpolation=cv2.INTER_AREA)
+
+        return frame
+
+    def apply_crop(self, frame):
+        if self.crop_ is not None:
+            x1, y1, x2, y2 = self.crop_
+            frame_height, frame_width = frame.shape[:2]
+            x1 = max(0, min(x1, frame_width - 1))
+            x2 = max(x1 + 1, min(x2, frame_width))
+            y1 = max(0, min(y1, frame_height - 1))
+            y2 = max(y1 + 1, min(y2, frame_height))
+
+            frame = frame[y1:y2, x1:x2]
+
+        return frame
 
     @staticmethod
     def time_to_seconds(time_val: Union[float, str]) -> float:
@@ -183,7 +161,6 @@ class VideoHolder:
                 raise ValueError(f"无效时间格式：{time_val}")
         else:
             raise TypeError(f"时间类型错误：{type(time_val)}")
-
 
 def get_center_crop_region(frame_shape: Tuple[int, int], crop_size: Tuple[int, int]) -> Tuple[int, int, int, int]:
     frame_h, frame_w = frame_shape
@@ -207,13 +184,13 @@ if __name__ == "__main__":
     print(f"total_frame: {video_holder.total_frame}")
     print(f"frame_origin_size: {video_holder.frame_origin_size}")
 
+    video_holder.decode()
+
     time = ("00:00:00", "00:00:05")
 
     video_holder.resize((640, 480))
-    video_holder.get_frames_by_interval(
-        time_segment=time, frame_interval=20,
-        output_dir="output/interval_clip", frame_prefix="interval_clip",
-    )
+    index_list = video_holder.get_frames_index_by_interval(time_segment=time, frame_interval=20)
+    video_holder.download_frames(frame_index_list=index_list, output_dir="output/interval_clip", frame_prefix="interval_clip",frame_format="png")
 
     video_holder.resize()
 
@@ -221,7 +198,5 @@ if __name__ == "__main__":
     crop_region = get_center_crop_region(frame_shape, (800, 800))
     video_holder.crop(crop_region)
 
-    video_holder.get_frames_specify_num(
-        time_segment=time, num_frames=7,
-        output_dir="output/specify_clip", frame_prefix="specify_clip",
-    )
+    index_list = video_holder.get_frames_index_by_specify_num(time_segment=time, num_frames=7)
+    video_holder.download_frames(frame_index_list=index_list, output_dir = "output/specify_clip", frame_prefix = "specify_clip",frame_format="png")
