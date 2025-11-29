@@ -35,6 +35,10 @@ class FrameSelectorPage(PageContent):
             view.widget_frame_viewer.view_collection
         )
 
+        collector.list_collections.on_delete.connect(
+            view.widget_frame_viewer.delete_collection
+        )
+
 class FrameSelectorContainer(Container):
     def __init__(self, x, y, data_manager):
         super(FrameSelectorContainer, self).__init__(x, y)

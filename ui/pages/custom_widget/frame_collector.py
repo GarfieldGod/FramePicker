@@ -8,6 +8,7 @@ from ui.utils.ui_utils import UiUtils
 class FrameCollector(QWidget):
     on_select_change = pyqtSignal(QWidget)
     on_view_change = pyqtSignal(QWidget)
+    on_delete = pyqtSignal(QWidget)
 
     def __init__(self, data_manager):
         super(FrameCollector, self).__init__()
@@ -56,7 +57,10 @@ class FrameCollector(QWidget):
         selected_items = self.list_collections.selectedItems()
         if not selected_items:
             return
+
         for item in selected_items:
+            widget = self.list_collections.itemWidget(item)
+            self.on_delete.emit(widget)
             self.list_collections.takeItem(self.list_collections.row(item))
 
     def select_collection(self, item):
@@ -134,8 +138,8 @@ class Collection(QWidget):
         del self.frames[index_to_delete]
 
         self.update_collection_info()
+        self.viewing_index = index_to_delete - 1 if index_to_delete - 1 >= 0 else 0
         self.view_collection()
-        self.viewing_index = index_to_delete - 1
 
     def update_collection_info(self):
         total_frame = len(self.frames)

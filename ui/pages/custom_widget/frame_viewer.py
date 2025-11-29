@@ -62,7 +62,7 @@ class FrameViewer(QWidget):
         layout_widget.addLayout(value_layout)
         layout_widget.addWidget(self.frame_slider)
 
-    def update_viewer(self):
+    def update_viewer(self, index=0):
         frames_empty = self.viewing_collection is None or len(self.viewing_collection.frames) == 0
         total_frame_index = 0 if frames_empty else len(self.viewing_collection.frames) - 1
         self.frame_slider.setRange(0, total_frame_index)
@@ -72,15 +72,11 @@ class FrameViewer(QWidget):
         self.slider_value_min.setText("0")
         self.slider_value_max.setText(f"{total_frame_index}")
 
-        if not frames_empty:
-            UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[0])
+        if not frames_empty and len(self.viewing_collection.frames) > index >= 0:
+            UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[index])
+            self.frame_slider.setValue(index)
         else:
             self.frame_label.setPixmap(QPixmap())
-
-    def get_frame_data(self, frame_list):
-        if not frame_list: return
-        # self.frames = frame_list
-        self.update_viewer()
 
     def on_slider_changed(self, value):
         try:
@@ -89,7 +85,6 @@ class FrameViewer(QWidget):
                     return
                 self.slider_value.setText(f"{value}")
                 UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[value])
-                print(f"on_slider_changed {value}")
         except Exception as e:
             print(f"Viewer Slider Change Failed: {e}")
 
@@ -110,15 +105,20 @@ class FrameViewer(QWidget):
             #     self.viewing_collection == widget_collection and
             #     len(self.viewing_collection.frames) == len(widget_collection.frames)): return
             # if len(widget_collection.frames) == 0: return
+            print("start view")
 
             self.viewing_collection = widget_collection
-            self.get_frame_data(self.viewing_collection.frames)
-            self.frame_slider.setValue(widget_collection.viewing_index)
+            self.update_viewer(widget_collection.viewing_index)
             widget_collection.viewing_index = 0
 
             self.update_add_delete_button()
         except Exception as e:
             print(f"Viewer View Collection Failed: {e}")
+
+    def delete_collection(self, widget_collection):
+            if widget_collection is not None and widget_collection == self.viewing_collection:
+                self.viewing_collection = None
+                self.update_viewer()
 
     def get_add_delete_enabled(self):
         viewing_is_valid = (self.viewing_collection is not None) and (len(self.viewing_collection.frames) > 0)
