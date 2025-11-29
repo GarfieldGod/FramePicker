@@ -33,6 +33,8 @@ class FramePicker:
         # init_video_info
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.total_frame = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
+        if self.total_frame >= 1000:
+            raise Exception("Video too long, more than 1000 frames not supported.")
         self.total_sec = self.total_frame / self.fps
         # init_frame_info
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
