@@ -13,6 +13,7 @@ class FramePicker:
     crop_ = None
     frame_origin_size = None
     decoded_frames = None
+    frist_frame = None
 
     def __init__(self, video_path):
         if not os.path.exists(video_path):
@@ -37,7 +38,9 @@ class FramePicker:
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
         ret, frame = self.video.read()
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        self.frame_origin_size = frame.shape[:2]
+        if ret:
+            self.frame_origin_size = frame.shape[:2]
+            self.frist_frame = frame
 
     def release(self):
         if self.video is not None:
@@ -54,6 +57,9 @@ class FramePicker:
                 continue
             frames[frame_index] = frame
         self.decoded_frames = frames
+
+    def get_all_frames(self):
+        return self.decoded_frames
 
     def get_frames_index_by_interval(self, time_segment, frame_interval=1):
         if frame_interval < 1:
