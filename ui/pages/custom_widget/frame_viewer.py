@@ -64,12 +64,14 @@ class FrameViewer(QWidget):
 
     def update_viewer(self, index=0):
         frames_empty = self.viewing_collection is None or len(self.viewing_collection.frames) == 0
-        total_frame_index = 0 if frames_empty else len(self.viewing_collection.frames) - 1
-        self.frame_slider.setRange(0, total_frame_index)
-        self.frame_slider.setValue(0)
+        total_frame_index = 0 if frames_empty else len(self.viewing_collection.frames)
+        min_frame_index = 0 if frames_empty else 1
+        min_frame_str = f"{min_frame_index}"
+        self.frame_slider.setRange(0, total_frame_index - 1)
+        self.frame_slider.setValue(min_frame_index)
 
-        self.slider_value.setText("0")
-        self.slider_value_min.setText("0")
+        self.slider_value.setText(min_frame_str)
+        self.slider_value_min.setText(min_frame_str)
         self.slider_value_max.setText(f"{total_frame_index}")
 
         if not frames_empty and len(self.viewing_collection.frames) > index >= 0:
@@ -83,7 +85,7 @@ class FrameViewer(QWidget):
             if self.viewing_collection is not None:
                 if value < 0 or value >= len(self.viewing_collection.frames):
                     return
-                self.slider_value.setText(f"{value}")
+                self.slider_value.setText(f"{value + 1}")
                 UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[value])
         except Exception as e:
             print(f"Viewer Slider Change Failed: {e}")
@@ -101,11 +103,6 @@ class FrameViewer(QWidget):
     def view_collection(self, widget_collection):
         try:
             if widget_collection is None or not isinstance(widget_collection, Collection): return
-            # if (self.viewing_collection is not None and
-            #     self.viewing_collection == widget_collection and
-            #     len(self.viewing_collection.frames) == len(widget_collection.frames)): return
-            # if len(widget_collection.frames) == 0: return
-            print("start view")
 
             self.viewing_collection = widget_collection
             self.update_viewer(widget_collection.viewing_index)
@@ -143,7 +140,7 @@ class FrameViewer(QWidget):
         frames = self.viewing_collection.frames
         try:
             if add_enabled:
-                frame_index = int(self.slider_value.text())
+                frame_index = int(self.slider_value.text()) - 1
                 frame = frames[frame_index].copy()
                 self.selected_collection.add_frame(frame)
         except Exception as e:
@@ -153,7 +150,7 @@ class FrameViewer(QWidget):
         _, delete_enabled = self.get_add_delete_enabled()
         try:
             if delete_enabled:
-                frame_index = int(self.slider_value.text())
+                frame_index = int(self.slider_value.text()) - 1
                 self.selected_collection.delete_frame(frame_index)
         except Exception as e:
             print(f"Viewer Delete Frame From Collection Failed: {e}")
