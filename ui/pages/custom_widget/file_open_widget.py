@@ -3,9 +3,13 @@ import os
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QLabel, QWidget, QFileDialog
 
+from src.frame_picker import FramePicker
+
 
 class FileOpenWidget(QWidget):
-    on_file_open = pyqtSignal(str)
+    frame_picker = None
+    on_decode_failed = pyqtSignal(str)
+    on_decode_success = pyqtSignal(list)
 
     def __init__(self, data_manager, parent=None):
         super(FileOpenWidget, self).__init__(parent)
@@ -40,8 +44,24 @@ class FileOpenWidget(QWidget):
             return
 
         print(f"{file_path}")
-        self.file_path_label.setText(f"{file_path}")
-        self.on_file_open.emit(file_path)
+        try:
+            self.decode_video(file_path)
+            self.file_path_label.setText(f"{file_path}")
+        except Exception as e:
+            self.file_path_label.setText(f"{e}")
 
-    def file_invalid(self, e):
-        self.file_path_label.setText(f"{e}")
+    def decode_video(self, file_path):
+        self.release_frame_picker()
+        try:
+            self.frame_picker = FramePicker(file_path)
+            self.frame_picker.decode()
+            frames = list(self.frame_picker.get_all_frames().values())
+
+            self.on_decode_success.emit(frames)
+        except Exception as e:
+            self.on_decode_failed.emit(f"Open File Failed {e}")
+
+    def release_frame_picker(self):
+        if self.frame_picker is not None:
+            self.frame_picker.release()
+            self.frame_picker = None

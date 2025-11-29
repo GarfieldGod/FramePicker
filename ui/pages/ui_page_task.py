@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QLabel, QHBoxLayout
 
 from ui.pages.custom_widget.file_open_widget import FileOpenWidget
 from ui.pages.custom_widget.frame_collector import FrameCollector
@@ -14,22 +14,26 @@ class FrameSelectorPage(PageContent):
 
     def init_container(self):
 
-        sel = FrameSelectorContainer(4, 6, self.data_manager)
-        self.add_container(sel, 0,0)
+        view = FrameSelectorContainer(4, 6, self.data_manager)
+        self.add_container(view, 0,0)
 
         file = FileSelectorContainer(2,1, self.data_manager)
         self.add_container(file, 0,4)
 
-        file.widget_file_open.on_file_open.connect(
-            sel.widget_frame_viewer.open_file
-        )
-
-        sel.widget_frame_viewer.on_decode_failed.connect(
-            file.widget_file_open.file_invalid
-        )
-
         collector = FrameCollectorContainer(2,5, self.data_manager)
         self.add_container(collector, 1,4)
+
+        file.widget_file_open.on_decode_success.connect(
+            lambda signal_dict: collector.list_collections.create_collection(signal_dict, "Decoded")
+        )
+
+        collector.list_collections.on_select_change.connect(
+            view.widget_frame_viewer.select_collection
+        )
+
+        collector.list_collections.on_view_change.connect(
+            view.widget_frame_viewer.view_collection
+        )
 
 class FrameSelectorContainer(Container):
     def __init__(self, x, y, data_manager):
