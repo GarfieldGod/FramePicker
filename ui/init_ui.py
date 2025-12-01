@@ -11,7 +11,7 @@ from ui.template.ui_page import PageNavigation
 def init_page_list(w):
     data_manager = DataManager
     nav_frame_selector = PageNavigation(name="Select")
-    con_frame_selector = FrameSelectorPage(6,6, data_manager)
+    con_frame_selector = FrameSelectorPage(6,5, data_manager)
     w.add_page(nav_frame_selector, con_frame_selector)
 
 if __name__ == "__main__":
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     window = MainWindow(
         title_text="Frame Picker",
         title_desc="--Pick Your Frames from AI-Generated Videos",
-        window_size=QSize(1920, 1080)
+        window_size=QSize(1440, 900)
     )
     init_page_list(window)
     window.show()

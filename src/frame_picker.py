@@ -100,7 +100,7 @@ class FramePicker:
     def resize(self, size=None):
         self.resize_ = size
 
-    def download_frames(self, frame_index_list, output_dir, frame_prefix, frame_format):
+    def download_frames_by_index(self, frame_index_list, output_dir, frame_prefix, frame_format):
         os.makedirs(output_dir, exist_ok=True)
         save_count = 0
         for frame_index in frame_index_list:
@@ -120,6 +120,32 @@ class FramePicker:
             print(f"下载：{frame_path}（对应时间：{frame_index / self.fps:.2f} 秒）")
 
         print(f"\n下载帧成功！总计保存 {save_count} 帧，路径：{output_dir}")
+
+    @staticmethod
+    def download_frames(frame_list, output_dir, frame_prefix, frame_format):
+        os.makedirs(output_dir, exist_ok=True)
+        save_count = 0
+        for frame in frame_list:
+            frame_filename = f"{frame_prefix}_{save_count:04d}.{frame_format}"
+            frame_path = os.path.join(output_dir, frame_filename)
+            cv2.imwrite(frame_path, frame)
+
+            save_count += 1
+            print(f"下载：{frame_path}")
+
+        print(f"\n下载帧成功！总计保存 {save_count} 帧，路径：{output_dir}")
+
+    @staticmethod
+    def download_frame(frame, output_dir, frame_prefix, frame_format, index=0):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            frame_filename = f"{frame_prefix}_{index:04d}.{frame_format}"
+            frame_path = os.path.join(output_dir, frame_filename)
+            cv2.imwrite(frame_path, frame)
+            return True, None
+        except Exception as e:
+            print(e)
+            return False, str(e)
 
     # private-----------------------------------------------------------
     def get_start_end_frame_index(self, time_segment):
@@ -198,7 +224,7 @@ if __name__ == "__main__":
 
     frame_picker.resize((640, 480))
     index_list = frame_picker.get_frames_index_by_interval(time_segment=time, frame_interval=20)
-    frame_picker.download_frames(frame_index_list=index_list, output_dir="output/interval_clip", frame_prefix="interval_clip",frame_format="png")
+    frame_picker.download_frames_by_index(frame_index_list=index_list, output_dir="output/interval_clip", frame_prefix="interval_clip",frame_format="png")
 
     frame_picker.resize()
 
@@ -207,4 +233,4 @@ if __name__ == "__main__":
     frame_picker.crop(crop_region)
 
     index_list = frame_picker.get_frames_index_by_specify_num(time_segment=time, num_frames=7)
-    frame_picker.download_frames(frame_index_list=index_list, output_dir = "output/specify_clip", frame_prefix = "specify_clip",frame_format="png")
+    frame_picker.download_frames_by_index(frame_index_list=index_list, output_dir = "output/specify_clip", frame_prefix = "specify_clip",frame_format="png")

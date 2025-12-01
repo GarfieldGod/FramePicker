@@ -70,9 +70,9 @@ class FrameViewer(QWidget):
         self.frame_slider.setRange(0, total_frame_index - 1)
         self.frame_slider.setValue(min_frame_index)
 
-        self.slider_value.setText(min_frame_str)
-        self.slider_value_min.setText(min_frame_str)
-        self.slider_value_max.setText(f"{total_frame_index}")
+        self.slider_value.setText(min_frame_str if not frames_empty else "")
+        self.slider_value_min.setText(min_frame_str if not frames_empty else "")
+        self.slider_value_max.setText(f"{total_frame_index}" if not frames_empty else "")
 
         if not frames_empty and len(self.viewing_collection.frames) > index >= 0:
             UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[index])

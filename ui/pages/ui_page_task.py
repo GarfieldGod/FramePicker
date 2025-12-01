@@ -14,14 +14,17 @@ class FrameSelectorPage(PageContent):
 
     def init_container(self):
 
-        view = FrameSelectorContainer(4, 6, self.data_manager)
+        view = FrameSelectorContainer(3, 6, self.data_manager)
         self.add_container(view, 0,0)
 
+        # view_dst = FrameSelectorContainer(3, 3, self.data_manager)
+        # self.add_container(view_dst, 3, 0)
+
         file = FileSelectorContainer(2,1, self.data_manager)
-        self.add_container(file, 0,4)
+        self.add_container(file, 0,3)
 
         collector = FrameCollectorContainer(2,5, self.data_manager)
-        self.add_container(collector, 1,4)
+        self.add_container(collector, 1,3)
 
         file.widget_file_open.on_decode_success.connect(
             lambda signal_dict: collector.list_collections.create_collection(signal_dict, "Decoded")

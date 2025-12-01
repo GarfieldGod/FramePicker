@@ -1,14 +1,19 @@
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBoxLayout, QListWidgetItem, \
-    QLabel, QLineEdit
+    QLabel, QLineEdit, QDialog
 
+from src.frame_picker import FramePicker
+from ui.pages.custom_function import DownLoadThread
+from ui.pages.custom_widget.download_dialog import DownLoadFrameDialog, ProgressDialog
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
     on_select_change = pyqtSignal(QWidget)
     on_view_change = pyqtSignal(QWidget)
     on_delete = pyqtSignal(QWidget)
+
+    collection_id=0
 
     def __init__(self, data_manager):
         super(FrameCollector, self).__init__()
@@ -42,7 +47,8 @@ class FrameCollector(QWidget):
         item = QListWidgetItem()
         item.setSizeHint(QSize(0, 100))
 
-        widget_collection = Collection(frames_list, collection_type)
+        widget_collection = Collection(frames_list, collection_type, self.collection_id)
+        self.collection_id += 1
         widget_collection.on_view.connect(
             lambda collection: self.on_view_change.emit(collection)
         )
@@ -77,14 +83,16 @@ class Collection(QWidget):
 
     frame_size = ""
     collection_type = "Empty"
+    collection_id = 0
     frames = []
 
     viewing_index = 0
 
-    def __init__(self, frames_list, collection_type="Empty"):
+    def __init__(self, frames_list, collection_type="Empty", collection_id=0):
         super(Collection, self).__init__()
         self.frames = frames_list
         self.collection_type = collection_type
+        self.collection_id = collection_id
 
         self.frame_label = QLabel()
         self.collection_name_label = QLineEdit(f"{collection_type} Collection")
@@ -92,6 +100,7 @@ class Collection(QWidget):
         self.frame_size_label = QLabel()
 
         self.view_collection_button =  QPushButton("Open in Viewer")
+        self.download_button = QPushButton("DownLoad")
 
         self.init_func()
         self.init_ui()
@@ -106,25 +115,32 @@ class Collection(QWidget):
         self.frame_label.setFixedWidth(80)
 
         self.view_collection_button.clicked.connect(self.view_collection)
+        self.download_button.clicked.connect(lambda :self.download_frames(self.frames, self.collection_name_label.text()))
 
         if len(self.frames) != 0:
             UiUtils.show_frame(self.frame_label, self.frames[0])
 
     def init_ui(self):
+        layout_collection_detail = QVBoxLayout()
+        layout_collection_detail.addWidget(self.total_frames_label)
+        layout_collection_detail.addWidget(self.frame_size_label)
+
+        layout_buttons = QVBoxLayout()
+        layout_buttons.addWidget(self.view_collection_button)
+        layout_buttons.addWidget(self.download_button)
+
+        layout_under_name = QHBoxLayout()
+        layout_under_name.addLayout(layout_collection_detail)
+        layout_under_name.addLayout(layout_buttons)
+
+        layout_part_2 = QVBoxLayout()
+        layout_part_2.addWidget(self.collection_name_label)
+        layout_part_2.addLayout(layout_under_name)
+
         layout = QHBoxLayout(self)
         layout.setAlignment(Qt.AlignLeft)
-
-        layout_collection_info = QVBoxLayout()
-        layout_collection_info.addWidget(self.collection_name_label)
-        layout_collection_info.addWidget(self.total_frames_label)
-        layout_collection_info.addWidget(self.frame_size_label)
-
-        layout_buttons = QHBoxLayout()
-        layout_buttons.addWidget(self.view_collection_button)
-
         layout.addWidget(self.frame_label)
-        layout.addLayout(layout_collection_info)
-        layout.addLayout(layout_buttons)
+        layout.addLayout(layout_part_2)
 
     def add_frame(self, frame):
         if len(self.frames) == 0:
@@ -151,3 +167,32 @@ class Collection(QWidget):
 
     def view_collection(self):
         self.on_view.emit(self)
+
+    def download_frames(self, frames, collection_name):
+        frame_count = len(frames)
+        if not frames or frame_count == 0: return
+
+        dlg = DownLoadFrameDialog(collection_name)
+        if dlg.exec_() == QDialog.Accepted:
+            file_path, file_name, file_format = dlg.values()
+            if not file_path or not file_name or not file_name: return
+
+            self.prg = ProgressDialog(collection_name, frame_count)
+
+            self.thread = DownLoadThread(
+                frame_list=frames,
+                output_dir=file_path,
+                frame_prefix=file_name,
+                frame_format=file_format
+            )
+
+            self.thread.download_one_finished.connect(
+                self.prg.on_download_one_finished,
+                Qt.QueuedConnection
+            )
+            self.thread.download_all_finished.connect(
+                self.prg.on_download_all_finished,
+                Qt.QueuedConnection
+            )
+            self.thread.start()
+            self.prg.exec_()
