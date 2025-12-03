@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBo
     QLabel, QLineEdit, QDialog
 
 from src.frame_picker import FramePicker
-from ui.pages.custom_function import DownLoadThread
-from ui.pages.custom_widget.download_dialog import DownLoadFrameDialog, ProgressDialog
+from ui.pages.custom_thread import DownLoadThread
+from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
@@ -177,7 +177,10 @@ class Collection(QWidget):
             file_path, file_name, file_format = dlg.values()
             if not file_path or not file_name or not file_name: return
 
-            self.prg = ProgressDialog(collection_name, frame_count)
+            self.prg = ProgressDialog(
+                f"DownLoad {collection_name}:",
+                frame_count,
+                operation="Download Frame")
 
             self.thread = DownLoadThread(
                 frame_list=frames,
@@ -187,11 +190,11 @@ class Collection(QWidget):
             )
 
             self.thread.download_one_finished.connect(
-                self.prg.on_download_one_finished,
+                self.prg.one_finished,
                 Qt.QueuedConnection
             )
             self.thread.download_all_finished.connect(
-                self.prg.on_download_all_finished,
+                self.prg.all_finished,
                 Qt.QueuedConnection
             )
             self.thread.start()

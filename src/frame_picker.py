@@ -14,6 +14,7 @@ class FramePicker:
     frame_origin_size = None
     decoded_frames = None
     frist_frame = None
+    decode_frame_max_limit = 500
 
     def __init__(self, video_path):
         if not os.path.exists(video_path):
@@ -33,8 +34,6 @@ class FramePicker:
         # init_video_info
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.total_frame = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
-        if self.total_frame >= 1000:
-            raise Exception("Video too long, more than 1000 frames not supported.")
         self.total_sec = self.total_frame / self.fps
         # init_frame_info
         self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -49,16 +48,26 @@ class FramePicker:
             self.video.release()
             self.video = None
 
-    def decode(self):
-        frames = {}
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        for frame_index in range(self.total_frame):
-            ret, frame = self.video.read()
-            if not ret:
-                print(f"警告：解码帧 {frame_index} 失败，跳过")
-                continue
-            frames[frame_index] = frame
-        self.decoded_frames = frames
+    def decode(self, check_func=None):
+        try:
+            frames = {}
+            success = True
+            self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            for frame_index in range(self.total_frame):
+                if frame_index >= self.decode_frame_max_limit: break
+                ret, frame = self.video.read()
+                if check_func is not None:
+                    check_func(ret, frame_index)
+                if not ret:
+                    success = False
+                    print(f"警告：解码帧 {frame_index} 失败，跳过")
+                    continue
+                frames[frame_index] = frame
+            self.decoded_frames = frames
+            return success
+        except Exception as e:
+            print(e)
+            return False
 
     def get_all_frames(self):
         return self.decoded_frames
