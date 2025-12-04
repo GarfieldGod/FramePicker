@@ -1,7 +1,7 @@
 import os
 import sys
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QApplication
 
 from ui.data_manager import DataManager
@@ -18,11 +18,13 @@ def init_page_list(w):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setAttribute(Qt.AA_EnableHighDpiScaling)
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps)
     window = MainWindow(
         title_text="Frame Picker",
         title_desc="--Pick Your Frames from AI-Generated Videos",
         window_size=QSize(1440, 900),
-        icon_path=os.path.join(get_ui_resource_path(), "image", "frame_picker.png"),
+        icon_path=os.path.join(get_ui_resource_path(), "image", "frame_picker_enhanced.png"),
         icon_size=QSize(90, 120),
     )
     init_page_list(window)

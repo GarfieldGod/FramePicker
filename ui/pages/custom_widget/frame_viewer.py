@@ -39,9 +39,12 @@ class FrameViewer(QWidget):
 
         self.slider_value.setAlignment(Qt.AlignCenter)
         self.slider_value.setFixedWidth(100)
+        self.slider_value.textEdited.connect(self.on_slider_value_changed)
         self.slider_value_max.setAlignment(Qt.AlignRight)
+        self.slider_value.setEnabled(False)
 
         self.frame_slider.setSingleStep(1)
+        self.frame_slider.setEnabled(False)
         self.frame_slider.valueChanged.connect(self.on_slider_changed)
 
     def init_layout(self):
@@ -77,8 +80,14 @@ class FrameViewer(QWidget):
         if not frames_empty and len(self.viewing_collection.frames) > index >= 0:
             UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[index])
             self.frame_slider.setValue(index)
+            self.slider_value.setEnabled(True)
+            self.frame_slider.setEnabled(True)
         else:
             self.frame_label.setPixmap(QPixmap())
+            self.slider_value.setEnabled(False)
+            self.frame_slider.setEnabled(False)
+
+        self.update_add_delete_button()
 
     def on_slider_changed(self, value):
         try:
@@ -89,6 +98,17 @@ class FrameViewer(QWidget):
                 UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[value])
         except Exception as e:
             print(f"Viewer Slider Change Failed: {e}")
+
+    def on_slider_value_changed(self):
+        try:
+            value = int(self.slider_value.text()) - 1
+            if self.viewing_collection is not None:
+                if value < 0 or value >= len(self.viewing_collection.frames):
+                    return
+                self.frame_slider.setValue(value)
+                UiUtils.show_frame(self.frame_label, self.viewing_collection.frames[value])
+        except Exception as e:
+            print(f"Viewer Slider Value Change Failed: {e}")
 
     def select_collection(self, widget_collection):
         try:
@@ -113,9 +133,12 @@ class FrameViewer(QWidget):
             print(f"Viewer View Collection Failed: {e}")
 
     def delete_collection(self, widget_collection):
-            if widget_collection is not None and widget_collection == self.viewing_collection:
-                self.viewing_collection = None
-                self.update_viewer()
+        if widget_collection is None: return
+        if widget_collection == self.viewing_collection:
+            self.viewing_collection = None
+        elif widget_collection == self.selected_collection:
+            self.selected_collection = None
+        self.update_viewer()
 
     def get_add_delete_enabled(self):
         viewing_is_valid = (self.viewing_collection is not None) and (len(self.viewing_collection.frames) > 0)

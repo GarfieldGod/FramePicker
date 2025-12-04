@@ -8,12 +8,12 @@ from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
 project_root = r"."
 # 主脚本路径
 main_script = os.path.join(project_root, "ui", "init_ui.py")
-ico = os.path.join(project_root, "icon.ico")
+ico = os.path.join(project_root, "icon_enhanced.ico")
 
 # 依赖的额外文件
 extra_files = []
 config_path = os.path.join(project_root, "config.json")
-ico_path = os.path.join(project_root, "icon.ico")
+ico_path = os.path.join(project_root, "icon_enhanced.ico")
 resource_path = os.path.join(project_root, "ui", "resource")
 
 if os.path.exists(config_path):

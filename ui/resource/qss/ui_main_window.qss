@@ -51,6 +51,34 @@
     padding: 0 5px 0 25px;
 }
 
+QPushButton {
+    font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+}
+
+QLabel {
+    font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+}
+
+QGroupBox {
+    font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    color: #888888;
+}
+
+QListWidget::item {
+    background-color: transparent;
+    color: #333;
+    selection-background-color: transparent;
+    selection-color: transparent;
+}
+
+QListWidget::item:hover {
+    background-color: #aaaaaa;
+    selection-background-color: transparent;
+    selection-color: transparent;
+}
+
 #btn_minimize, #btn_maximize, #btn_close {
     background-color: transparent;
     border: none;
