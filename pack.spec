@@ -14,14 +14,14 @@ ico = os.path.join(project_root, "icon.ico")
 extra_files = []
 config_path = os.path.join(project_root, "config.json")
 ico_path = os.path.join(project_root, "icon.ico")
-main_qss_path = os.path.join(project_root, "ui", "template", "ui_main_window.qss")
+resource_path = os.path.join(project_root, "ui", "resource")
 
 if os.path.exists(config_path):
     extra_files.append((str(config_path), "."))
 if os.path.exists(ico_path):
     extra_files.append((str(ico_path), "."))
-if os.path.exists(main_qss_path):
-    extra_files.append((str(main_qss_path), "."))
+if os.path.exists(resource_path):
+    extra_files.append((str(resource_path), os.path.join(".", "ui", "resource")))
 
 a = Analysis(
     [str(main_script)],

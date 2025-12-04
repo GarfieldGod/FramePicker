@@ -10,10 +10,6 @@
     background-color: transparent;
 }
 
-#Dialog {
-    border: 5px solid #bbbbbb;
-}
-
 #Navigation {
     background-color: transparent;
     border: none;
@@ -26,6 +22,7 @@
     color: #333;
     selection-background-color: transparent;
     selection-color: #333;
+    margin-Top: 15px;
 }
 
 #Navigation::item:hover {
