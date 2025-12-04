@@ -1,4 +1,5 @@
 import os
+import sys
 
 from PyQt5.QtCore import Qt, QRectF, QSize, QPoint
 from PyQt5.QtGui import QPainter, QBrush, QPainterPath, QPixmap
@@ -107,8 +108,15 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(navigation_layout)
         main_layout.addLayout(content_main_layout)
 
+    def get_resource_path(self):
+        if hasattr(sys, '_MEIPASS'):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(__file__)
+        return base_path
+
     def load_qss(self):
-        qss_path = os.path.join(os.path.dirname(__file__), "ui_main_window.qss")
+        qss_path = os.path.join(self.get_resource_path(), "ui_main_window.qss")
         try:
             with open(qss_path, "r", encoding="utf-8") as f:
                 qss_content = f.read()
