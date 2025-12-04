@@ -2,7 +2,7 @@ import os
 import sys
 
 from PyQt5.QtCore import Qt, QRectF, QSize, QPoint
-from PyQt5.QtGui import QPainter, QBrush, QPainterPath, QPixmap
+from PyQt5.QtGui import QPainter, QBrush, QPainterPath, QPixmap, QIcon
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QListWidget, QListWidgetItem,
                              QStackedWidget, QLabel, QPushButton, QApplication)
@@ -71,6 +71,7 @@ class MainWindow(QMainWindow):
             print(e)
 
     def init_window(self):
+        self.setWindowIcon(QIcon(self.icon_path))
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(self.window_size)
