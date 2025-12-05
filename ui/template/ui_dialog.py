@@ -1,13 +1,14 @@
 import os
 import sys
 
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QSize
 from PyQt5.QtGui import QBrush, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLineEdit, QComboBox, QApplication, QSpacerItem, \
     QPushButton, QHBoxLayout, QSizePolicy
 
 from ui.template.element.ui_element_title import TitleBarArea
 from ui.template.ui_custom_color import CustomColor
+from ui.template.ui_custom_function import get_ui_resource_path
 
 
 class Dialog(QDialog):
@@ -16,7 +17,9 @@ class Dialog(QDialog):
     title_color = CustomColor.dark_87_90_95
     border_width = 1
     border_color = CustomColor.dark_87_90_95
-    def __init__(self, title_text, title_height=50, show_confirm_button=True, show_cancel_button=True, parent=None):
+    def __init__(self, title_text, title_height=50,
+                 show_confirm_button=True, show_cancel_button=True, button_right=True, button_size=QSize(80,40),
+                 parent=None):
         super().__init__(parent)
 
         self.setObjectName("Dialog")
@@ -28,6 +31,7 @@ class Dialog(QDialog):
 
         self.show_confirm = show_confirm_button
         self.show_cancel = show_cancel_button
+        self.button_right = button_right
 
         self.title_bar = TitleBarArea(
             title_text=title_text,
@@ -39,8 +43,10 @@ class Dialog(QDialog):
             window=self)
 
         self.confirm_button = QPushButton("confirm")
+        self.confirm_button.setFixedSize(button_size)
         if not show_confirm_button: self.confirm_button.hide()
         self.cancel_button = QPushButton("cancel")
+        self.cancel_button.setFixedSize(button_size)
         if not show_cancel_button: self.cancel_button.hide()
         self.confirm_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
@@ -67,7 +73,7 @@ class Dialog(QDialog):
             widget_layout.addWidget(self.content)
 
         button_layout = QHBoxLayout()
-        if self.show_confirm and self.show_cancel:
+        if self.show_confirm and self.show_cancel and self.button_right:
             button_layout.addStretch(4)
         button_layout.addStretch(1)
         button_layout.addWidget(self.confirm_button)
@@ -83,7 +89,7 @@ class Dialog(QDialog):
         pass
 
     def load_qss(self):
-        qss_path = os.path.join(os.path.dirname(__file__), "ui_main_window.qss")
+        qss_path = os.path.join(get_ui_resource_path(), "qss", "ui_main_window.qss")
         try:
             with open(qss_path, "r", encoding="utf-8") as f:
                 qss_content = f.read()

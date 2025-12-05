@@ -83,3 +83,19 @@ class ProgressDialog(Dialog):
         if success and self.auto_close:
             self.close()
         self.show_confirm_button()
+
+class MessageBox(Dialog):
+    def __init__(self, message, message_name="Message:", parent=None):
+        self.label_message = QLabel(message)
+
+        super().__init__(title_text=message_name, title_height=30, button_right=False, parent=parent)
+
+    def init_content_widget(self):
+        self.content = QWidget()
+        self.label_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label_message.setObjectName("MessageBox_Label")
+        layout_content = QVBoxLayout(self.content)
+        layout_content.setContentsMargins(30, 30, 30, 30)
+        layout_content.setSpacing(0)
+
+        layout_content.addWidget(self.label_message)

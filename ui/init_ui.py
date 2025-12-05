@@ -24,7 +24,8 @@ if __name__ == "__main__":
         title_text="Frame Picker",
         title_desc="--Pick Your Frames from AI-Generated Videos",
         window_size=QSize(1440, 900),
-        icon_path=os.path.join(get_ui_resource_path(), "image", "frame_picker_enhanced.png"),
+        icon_path=os.path.join(get_ui_resource_path(), "image", "frame_picker_right.png"),
+        window_icon=os.path.join(get_ui_resource_path(), "image", "frame_picker_enhanced.png"),
         icon_size=QSize(90, 120),
     )
     init_page_list(window)

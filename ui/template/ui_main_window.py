@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
     content_background_color = CustomColor.yellow_247_243_232
 
     def __init__(
-            self, title_text="", title_desc="", icon_path="", icon_size=QSize(50,50), window_size=QSize(640, 480),
+            self, title_text="", title_desc="", icon_path="", window_icon="", icon_size=QSize(50,50), window_size=QSize(640, 480),
             show_min_button=True,show_max_button=True,show_close_button=True,
             navigation_width=90, title_bar_height=50, space_width=60,
             round_radius=25, window_padding=0
@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
             self.title_text = title_text
             self.title_desc = title_desc
             self.icon_path = icon_path
+            self.window_icon = window_icon if window_icon else icon_path
             self.icon_size = icon_size
             self.window_size = window_size
             self.navigation_width = navigation_width
@@ -71,7 +72,7 @@ class MainWindow(QMainWindow):
             print(e)
 
     def init_window(self):
-        self.setWindowIcon(QIcon(self.icon_path))
+        self.setWindowIcon(QIcon(self.window_icon))
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(self.window_size)

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBo
 
 from src.frame_picker import FramePicker
 from ui.pages.custom_thread import DownLoadThread
-from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog
+from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
@@ -70,6 +70,11 @@ class FrameCollector(QWidget):
 
         for item in selected_items:
             widget = self.list_collections.itemWidget(item)
+            # if widget is not None and len(widget.frames) > 0:
+            dlg = MessageBox("Are you sure you want to delete the collection?\n"
+                             "\nThis collection is not empty!")
+            if dlg.exec_() != QDialog.Accepted:
+                return
             self.on_delete.emit(widget)
             self.list_collections.takeItem(self.list_collections.row(item))
 
