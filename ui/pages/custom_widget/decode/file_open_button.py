@@ -2,38 +2,23 @@ import os
 from pathlib import Path
 
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QLabel, QWidget, QFileDialog
+from PyQt5.QtWidgets import QPushButton, QFileDialog
 
 from src.frame_picker import FramePicker
-from ui.pages.custom_thread import DecodeThread
+from ui.pages.custom_widget.custom_thread import DecodeThread
 from ui.pages.custom_widget.custom_dialog import ProgressDialog
 
 
-class FileOpenWidget(QWidget):
+class FileOpenButton(QPushButton):
     frame_picker = None
     on_decode_failed = pyqtSignal(str)
     on_decode_success = pyqtSignal(list)
 
-    def __init__(self, data_manager, parent=None):
-        super(FileOpenWidget, self).__init__(parent)
+    def __init__(self, parent=None):
+        super(FileOpenButton, self).__init__(parent)
 
-        self.file_path_label = QLabel("未选择有效文件")
-        self.open_file_button = QPushButton("Open File")
-
-        self.init_ui()
-
-    def init_ui(self):
-        layout_widget = QVBoxLayout(self)
-        layout_widget.setContentsMargins(0, 0, 0, 0)
-
-        self.file_path_label.setWordWrap(True)
-
-        layout_open_file = QVBoxLayout()
-        layout_open_file.addWidget(self.file_path_label)
-        layout_open_file.addWidget(self.open_file_button)
-        self.open_file_button.clicked.connect(self.open_file_dialog)
-
-        layout_widget.addLayout(layout_open_file)
+        self.setText("Open File")
+        self.clicked.connect(self.open_file_dialog)
 
     def open_file_dialog(self):
         file_path, file_type = QFileDialog.getOpenFileName(
@@ -94,7 +79,6 @@ class FileOpenWidget(QWidget):
             )
             self.thread.start()
             self.prg.exec_()
-            print(6)
 
         except Exception as e:
             self.on_decode_failed.emit(f"Open File Failed {e}")

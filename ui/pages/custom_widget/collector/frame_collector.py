@@ -3,19 +3,17 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBoxLayout, QListWidgetItem, \
     QLabel, QLineEdit, QDialog
 
-from src.frame_picker import FramePicker
-from ui.pages.custom_thread import DownLoadThread
+from ui.collection_manager import Collection, CollectionManager, COLLECTIONS
+from ui.pages.custom_widget.custom_thread import DownLoadThread
 from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
-    on_select_change = pyqtSignal(QWidget)
-    on_view_change = pyqtSignal(QWidget)
-    on_delete = pyqtSignal(QWidget)
+    on_select_change = pyqtSignal(int)
+    on_view_change = pyqtSignal(int, int)
+    on_delete = pyqtSignal(int)
 
-    collection_id=0
-
-    def __init__(self, data_manager):
+    def __init__(self):
         super(FrameCollector, self).__init__()
 
         self.list_collections = QListWidget()
@@ -44,15 +42,14 @@ class FrameCollector(QWidget):
         layout_collector.addLayout(layout_buttons)
         layout_collector.addWidget(self.list_collections)
 
-    def create_collection(self, frames_list, collection_type="Empty"):
+    def create_collection(self, collection):
         try:
             item = QListWidgetItem()
             item.setSizeHint(QSize(0, 100))
 
-            widget_collection = Collection(frames_list, collection_type, self.collection_id)
-            self.collection_id += 1
+            widget_collection = CollectionWidget(collection)
             widget_collection.on_view.connect(
-                lambda collection: self.view_collection(collection)
+                lambda collection_id: self.view_collection(collection_id)
             )
 
             self.list_collections.addItem(item)
@@ -70,7 +67,7 @@ class FrameCollector(QWidget):
 
         for item in selected_items:
             widget = self.list_collections.itemWidget(item)
-            # if widget is not None and len(widget.frames) > 0:
+            # if widget is not None and len(widget.collection.frames) > 0:
             dlg = MessageBox("Are you sure you want to delete the collection?\n"
                              "\nThis collection is not empty!")
             if dlg.exec_() != QDialog.Accepted:
@@ -87,11 +84,11 @@ class FrameCollector(QWidget):
         except Exception as e:
             print(f"Select Change Failed: {e}")
 
-    def view_collection(self, collection):
+    def view_collection(self, collection_id):
         try:
             if isinstance(collection, Collection):
                 self.reset_view_collection(collection)
-                self.on_view_change.emit(collection)
+                self.on_view_change.emit(collection_id)
         except Exception as e:
             print(f"Select Change Failed: {e}")
 
@@ -100,7 +97,7 @@ class FrameCollector(QWidget):
         for index in range(item_count):
             item = self.list_collections.item(index)
             widget = self.list_collections.itemWidget(item)
-            if isinstance(widget, Collection):
+            if isinstance(widget, CollectionWidget):
                 if selected_widget == widget:
                     widget.selected()
                 else:
@@ -111,11 +108,17 @@ class FrameCollector(QWidget):
         for index in range(item_count):
             item = self.list_collections.item(index)
             widget = self.list_collections.itemWidget(item)
-            if isinstance(widget, Collection):
+            if isinstance(widget, CollectionWidget):
                 if selected_widget == widget:
                     widget.viewing()
                 else:
                     widget.not_viewing()
+
+    def update_list(self):
+        self.list_collections.clear()
+        for collection in COLLECTIONS:
+            self.create_collection(collection)
+
 
 vStr="src"
 sStr="dst"
@@ -128,24 +131,19 @@ vStr_StyleSheet=base_StyleSheet + "background-color: blue;"
 sStr_StyleSheet=base_StyleSheet + "background-color: purple;"
 vasStr_StyleSheet=base_StyleSheet + "background-color: red;"
 
-class Collection(QWidget):
-    on_view = pyqtSignal(QWidget)
+class CollectionWidget(QWidget):
+    on_view = pyqtSignal(int)
 
     frame_size = ""
-    collection_type = "Empty"
-    collection_id = 0
-    frames = []
 
     viewing_index = 0
 
-    def __init__(self, frames_list, collection_type="Empty", collection_id=0):
-        super(Collection, self).__init__()
-        self.frames = frames_list
-        self.collection_type = collection_type
-        self.collection_id = collection_id
+    def __init__(self, collection):
+        super(CollectionWidget, self).__init__()
+        self.collection = collection
 
         self.frame_label = QLabel()
-        self.collection_name_label = QLineEdit(f"{collection_type} Collection")
+        self.collection_name_label = QLineEdit(f"{collection.collection_type} Collection")
         self.status_label = QLabel()
         self.total_frames_label = QLabel()
         self.frame_size_label = QLabel()
@@ -158,7 +156,7 @@ class Collection(QWidget):
 
     def init_func(self):
         self.update_collection_info()
-        self.collection_name_label.setEnabled(True if self.collection_type=="Empty" else False)
+        self.collection_name_label.setEnabled(True if self.collection.collection_type=="Empty" else False)
 
         self.frame_label.setStyleSheet("border: 1px solid #ccc;")
         self.frame_label.setAlignment(Qt.AlignCenter)
@@ -168,11 +166,11 @@ class Collection(QWidget):
         self.status_label.setFixedWidth(80)
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.view_collection_button.clicked.connect(lambda :self.on_view.emit(self))
-        self.download_button.clicked.connect(lambda :self.download_frames(self.frames, self.collection_name_label.text()))
+        self.view_collection_button.clicked.connect(lambda :self.on_view.emit(self.collection))
+        self.download_button.clicked.connect(lambda :self.download_frames(self.collection.frames, self.collection_name_label.text()))
 
-        if len(self.frames) != 0:
-            UiUtils.show_frame(self.frame_label, self.frames[0])
+        if len(self.collection.frames) != 0:
+            UiUtils.show_frame(self.frame_label, self.collection.frames[0])
 
     def init_ui(self):
         layout_collection_detail = QVBoxLayout()
@@ -203,22 +201,22 @@ class Collection(QWidget):
         layout.addLayout(layout_part_2)
 
     def add_frame(self, frame):
-        if len(self.frames) == 0:
+        if len(self.collection.frames) == 0:
             UiUtils.show_frame(self.frame_label, frame)
 
-        self.frames.append(frame)
+        self.collection.frames.append(frame)
         self.update_collection_info()
 
     def delete_frame(self, index_to_delete):
-        if index_to_delete < 0 or index_to_delete >= len(self.frames): return
-        del self.frames[index_to_delete]
+        if index_to_delete < 0 or index_to_delete >= len(self.collection.frames): return
+        del self.collection.frames[index_to_delete]
 
         self.update_collection_info()
         self.viewing_index = index_to_delete - 1 if index_to_delete - 1 >= 0 else 0
-        self.on_view.emit(self)
+        self.on_view.emit(self.collection)
 
     def update_collection_info(self):
-        total_frame = len(self.frames)
+        total_frame = len(self.collection.frames)
         self.total_frames_label.setText(f"Total Frames: {total_frame}")
         self.frame_size_label.setText(f"Frames Size: {self.frame_size}")
 
