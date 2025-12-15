@@ -3,31 +3,35 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBoxLayout, QListWidgetItem, \
     QLabel, QLineEdit, QDialog
 
-from src.frame_picker import FramePicker
-from ui.pages.custom_thread import DownLoadThread
+from src.collection.collection import Collection, CollectionType
+from src.collection.collection_manager import CollectionManager
+from ui.pages.custom_widget.custom_thread import DownLoadThread
 from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox
+from ui.pages.custom_widget.decode.file_open_button import FileOpenButton
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
-    on_select_change = pyqtSignal(QWidget)
-    on_view_change = pyqtSignal(QWidget)
-    on_delete = pyqtSignal(QWidget)
+    on_select_change = pyqtSignal(int)
+    on_view_change = pyqtSignal(int, int)
+    on_delete = pyqtSignal(int)
 
-    collection_id=0
-
-    def __init__(self, data_manager):
+    def __init__(self):
         super(FrameCollector, self).__init__()
 
         self.list_collections = QListWidget()
-        self.button_add_collection = QPushButton("Add Collection")
-        self.button_delete_collection = QPushButton("Delete Collection")
+        self.button_add_collection = QPushButton("+")
+        self.button_delete_collection = QPushButton("-")
+        self.open_file_button = FileOpenButton()
+        self.button_size = QSize(30, 30)
 
         self.init_ui_layout()
         self.init_functions()
 
     def init_functions(self):
         self.button_add_collection.clicked.connect(
-            lambda _: self.create_collection([])
+            lambda _: self.create_collection(
+                CollectionManager.create_collection()
+            )
         )
         self.button_delete_collection.clicked.connect(self.delete_collection)
 
@@ -40,82 +44,105 @@ class FrameCollector(QWidget):
         layout_buttons = QHBoxLayout()
         layout_buttons.addWidget(self.button_add_collection)
         layout_buttons.addWidget(self.button_delete_collection)
+        layout_buttons.addStretch()
+        layout_buttons.addWidget(self.open_file_button)
+        self.button_add_collection.setFixedSize(self.button_size)
+        self.button_delete_collection.setFixedSize(self.button_size)
+        self.open_file_button.setFixedSize(self.button_size)
 
         layout_collector.addLayout(layout_buttons)
         layout_collector.addWidget(self.list_collections)
 
-    def create_collection(self, frames_list, collection_type="Empty"):
+    def create_collection(self, collection, auto_view=False):
         try:
             item = QListWidgetItem()
             item.setSizeHint(QSize(0, 100))
 
-            widget_collection = Collection(frames_list, collection_type, self.collection_id)
-            self.collection_id += 1
+            widget_collection = CollectionWidget(collection)
             widget_collection.on_view.connect(
-                lambda collection: self.view_collection(collection)
+                self.view_collection
             )
 
             self.list_collections.addItem(item)
             self.list_collections.setItemWidget(item, widget_collection)
 
-            if collection_type != "Empty":
-                self.view_collection(widget_collection)
+            if collection.collection_type != CollectionType.CUSTOM and auto_view:
+                self.view_collection(collection.collection_id)
         except Exception as e:
             print(f"Create collection error: {e}")
 
     def delete_collection(self):
-        selected_items = self.list_collections.selectedItems()
-        if not selected_items:
-            return
-
-        for item in selected_items:
-            widget = self.list_collections.itemWidget(item)
-            # if widget is not None and len(widget.frames) > 0:
-            dlg = MessageBox("Are you sure you want to delete the collection?\n"
-                             "\nThis collection is not empty!")
-            if dlg.exec_() != QDialog.Accepted:
+        try:
+            selected_items = self.list_collections.selectedItems()
+            if not selected_items:
                 return
-            self.on_delete.emit(widget)
-            self.list_collections.takeItem(self.list_collections.row(item))
+
+            for item in selected_items:
+                widget = self.list_collections.itemWidget(item)
+                # if widget is not None and len(widget.collection.frames) > 0:
+                dlg = MessageBox("Are you sure you want to delete the collection?\n"
+                                 "\nThis collection is not empty!")
+                if dlg.exec_() != QDialog.Accepted:
+                    return
+                self.on_delete.emit(widget.collection.collection_id)
+                self.list_collections.takeItem(self.list_collections.row(item))
+        except Exception as e:
+            print(f"Delete collection error: {e}")
 
     def select_collection(self, item):
         try:
             widget_collection = self.list_collections.itemWidget(item)
-            if isinstance(widget_collection, Collection):
+            if isinstance(widget_collection, CollectionWidget):
                 self.reset_selected_collection(widget_collection)
-                self.on_select_change.emit(widget_collection)
+                self.on_select_change.emit(widget_collection.collection.collection_id)
         except Exception as e:
             print(f"Select Change Failed: {e}")
 
-    def view_collection(self, collection):
+    def view_collection(self, collection_id):
         try:
+            collection = CollectionManager.get_collection(collection_id)
             if isinstance(collection, Collection):
-                self.reset_view_collection(collection)
-                self.on_view_change.emit(collection)
+                self.reset_view_collection(collection_id)
+                self.on_view_change.emit(collection_id, 0)
         except Exception as e:
-            print(f"Select Change Failed: {e}")
+            print(f"View Change Failed: {e}")
 
     def reset_selected_collection(self, selected_widget=None):
-        item_count = self.list_collections.count()
-        for index in range(item_count):
-            item = self.list_collections.item(index)
-            widget = self.list_collections.itemWidget(item)
-            if isinstance(widget, Collection):
-                if selected_widget == widget:
-                    widget.selected()
-                else:
-                    widget.not_selected()
+        try:
+            item_count = self.list_collections.count()
+            for index in range(item_count):
+                item = self.list_collections.item(index)
+                widget = self.list_collections.itemWidget(item)
+                if isinstance(widget, CollectionWidget):
+                    if selected_widget == widget:
+                        widget.selected()
+                    else:
+                        widget.not_selected()
+        except Exception as e:
+            print(f"Reset Select Change Failed: {e}")
 
-    def reset_view_collection(self, selected_widget=None):
-        item_count = self.list_collections.count()
-        for index in range(item_count):
-            item = self.list_collections.item(index)
-            widget = self.list_collections.itemWidget(item)
-            if isinstance(widget, Collection):
-                if selected_widget == widget:
-                    widget.viewing()
-                else:
-                    widget.not_viewing()
+    def reset_view_collection(self, collection_id):
+        try:
+            item_count = self.list_collections.count()
+            for index in range(item_count):
+                item = self.list_collections.item(index)
+                widget = self.list_collections.itemWidget(item)
+                if isinstance(widget, CollectionWidget):
+                    if widget.collection.collection_id == collection_id:
+                        widget.viewing()
+                    else:
+                        widget.not_viewing()
+        except Exception as e:
+            print(f"Reset View Change Failed: {e}")
+
+    def update_list(self):
+        try:
+            self.list_collections.clear()
+            for collection in CollectionManager.get_all_collections().values():
+                self.create_collection(collection)
+        except Exception as e:
+            print(f"Update List Failed: {e}")
+
 
 vStr="src"
 sStr="dst"
@@ -128,24 +155,19 @@ vStr_StyleSheet=base_StyleSheet + "background-color: blue;"
 sStr_StyleSheet=base_StyleSheet + "background-color: purple;"
 vasStr_StyleSheet=base_StyleSheet + "background-color: red;"
 
-class Collection(QWidget):
-    on_view = pyqtSignal(QWidget)
+class CollectionWidget(QWidget):
+    on_view = pyqtSignal(int)
 
     frame_size = ""
-    collection_type = "Empty"
-    collection_id = 0
-    frames = []
 
     viewing_index = 0
 
-    def __init__(self, frames_list, collection_type="Empty", collection_id=0):
-        super(Collection, self).__init__()
-        self.frames = frames_list
-        self.collection_type = collection_type
-        self.collection_id = collection_id
+    def __init__(self, collection):
+        super(CollectionWidget, self).__init__()
+        self.collection = collection
 
         self.frame_label = QLabel()
-        self.collection_name_label = QLineEdit(f"{collection_type} Collection")
+        self.collection_name_label = QLineEdit(collection.collection_name)
         self.status_label = QLabel()
         self.total_frames_label = QLabel()
         self.frame_size_label = QLabel()
@@ -158,7 +180,7 @@ class Collection(QWidget):
 
     def init_func(self):
         self.update_collection_info()
-        self.collection_name_label.setEnabled(True if self.collection_type=="Empty" else False)
+        self.collection_name_label.setEnabled(True if self.collection.collection_type==CollectionType.CUSTOM else False)
 
         self.frame_label.setStyleSheet("border: 1px solid #ccc;")
         self.frame_label.setAlignment(Qt.AlignCenter)
@@ -168,11 +190,11 @@ class Collection(QWidget):
         self.status_label.setFixedWidth(80)
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.view_collection_button.clicked.connect(lambda :self.on_view.emit(self))
-        self.download_button.clicked.connect(lambda :self.download_frames(self.frames, self.collection_name_label.text()))
+        self.view_collection_button.clicked.connect(lambda :self.on_view.emit(self.collection.collection_id))
+        self.download_button.clicked.connect(lambda :self.download_frames(self.collection.frames, self.collection_name_label.text()))
 
-        if len(self.frames) != 0:
-            UiUtils.show_frame(self.frame_label, self.frames[0])
+        if len(self.collection.frames) != 0:
+            UiUtils.show_frame(self.frame_label, self.collection.frames[0])
 
     def init_ui(self):
         layout_collection_detail = QVBoxLayout()
@@ -203,22 +225,22 @@ class Collection(QWidget):
         layout.addLayout(layout_part_2)
 
     def add_frame(self, frame):
-        if len(self.frames) == 0:
+        if len(self.collection.frames) == 0:
             UiUtils.show_frame(self.frame_label, frame)
 
-        self.frames.append(frame)
+        self.collection.frames.append(frame)
         self.update_collection_info()
 
     def delete_frame(self, index_to_delete):
-        if index_to_delete < 0 or index_to_delete >= len(self.frames): return
-        del self.frames[index_to_delete]
+        if index_to_delete < 0 or index_to_delete >= len(self.collection.frames): return
+        del self.collection.frames[index_to_delete]
 
         self.update_collection_info()
         self.viewing_index = index_to_delete - 1 if index_to_delete - 1 >= 0 else 0
-        self.on_view.emit(self)
+        self.on_view.emit(self.collection)
 
     def update_collection_info(self):
-        total_frame = len(self.frames)
+        total_frame = len(self.collection.frames)
         self.total_frames_label.setText(f"Total Frames: {total_frame}")
         self.frame_size_label.setText(f"Frames Size: {self.frame_size}")
 
