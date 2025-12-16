@@ -4,7 +4,6 @@ import sys
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QApplication
 
-from ui.pages.ui_page_crop import FrameCropPage
 from ui.pages.ui_page_select import FrameSelectorPage
 from ui.template.ui_custom_function import get_ui_resource_path
 from ui.template.ui_main_window import MainWindow
@@ -14,10 +13,6 @@ def init_page_list(w):
     nav_frame_selector = PageNavigation(name="Select")
     con_frame_selector = FrameSelectorPage(6,5)
     w.add_page(nav_frame_selector, con_frame_selector)
-
-    nav_frame_crop = PageNavigation(name="Crop")
-    con_frame_crop = FrameCropPage(6,5)
-    w.add_page(nav_frame_crop, con_frame_crop)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

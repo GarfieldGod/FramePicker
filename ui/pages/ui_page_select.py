@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from src.collection.collection import CollectionType
 from src.collection.collection_manager import CollectionManager
 from ui.pages.custom_widget.collector.frame_collector import FrameCollector
+from ui.pages.custom_widget.crop_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer_select import FrameViewerSelect
 from ui.template.ui_page import PageContent, Container
 
@@ -21,13 +22,6 @@ class FrameSelectorPage(PageContent):
 
         collector = FrameCollectorContainer(2,6)
         self.add_container(collector, 0,3)
-
-        collector.list_collections.open_file_button.on_decode_success.connect(
-            lambda signal_dict:(
-                col := CollectionManager.create_collection("Decode Collection", signal_dict, CollectionType.DECODE),
-                collector.list_collections.create_collection(col, auto_view=True)
-            )
-        )
 
         collector.list_collections.on_select_change.connect(
             view.widget_frame_viewer.select_collection
@@ -48,7 +42,8 @@ class FrameSelectorPage(PageContent):
 class FrameSelectorContainer(Container):
     def __init__(self, x, y):
         super(FrameSelectorContainer, self).__init__(x, y)
-        self.widget_frame_viewer = FrameViewerSelect()
+        self.crop_label = CropLabel()
+        self.widget_frame_viewer = FrameViewerSelect(self.crop_label)
 
         self.init_ui_layout()
 

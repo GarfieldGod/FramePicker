@@ -14,6 +14,9 @@ class FrameViewerSelect(FrameViewer):
         self.button_add = QPushButton("Add to Selected Collection")
         self.button_delete = QPushButton("Delete from Viewing Collection")
 
+        self.start_crop = QPushButton("Crop")
+        self.apply_crop = QPushButton("Apply")
+
         super(FrameViewerSelect, self).__init__(frame_label, parent)
 
     def init_ui(self):
@@ -24,12 +27,17 @@ class FrameViewerSelect(FrameViewer):
         self.button_delete.setEnabled(False)
         self.button_delete.clicked.connect(self.delete_from_collection)
 
+        self.start_crop.clicked.connect(self.start_corp_func)
+        self.apply_crop.clicked.connect(self.apply_corp_func)
+
     def init_layout(self):
         super(FrameViewerSelect, self).init_layout()
 
         collection_buttons_layout = QHBoxLayout()
         collection_buttons_layout.addWidget(self.button_add)
         collection_buttons_layout.addWidget(self.button_delete)
+        collection_buttons_layout.addWidget(self.start_crop)
+        collection_buttons_layout.addWidget(self.apply_crop)
 
         self.layout_widget.addLayout(collection_buttons_layout)
 
@@ -37,6 +45,28 @@ class FrameViewerSelect(FrameViewer):
         super(FrameViewerSelect, self).update_viewer(index)
 
         self.update_add_delete_button()
+
+    def start_corp_func(self):
+        if not self.collection_v: return
+
+        if self.frame_label.is_cropping:
+            self.frame_label.is_cropping = False
+        else:
+            self.frame_label.is_cropping = True
+
+        self.update_viewer(self.frame_slider.value())
+
+    def apply_corp_func(self):
+        if not self.frame_label.is_cropping: return
+        try:
+            for index, frame in enumerate(self.collection_v.frames):
+                self.collection_v.frames[index] = self.frame_label.crop_image(frame)
+
+            self.update_collection_list()
+            self.update_viewer(self.frame_slider.value())
+            self.start_corp_func()
+        except Exception as e:
+            print(e)
 
     def select_collection(self, collection_id):
         try:
@@ -54,6 +84,7 @@ class FrameViewerSelect(FrameViewer):
         if collection is None: return
         if collection == self.collection_v:
             self.collection_v = None
+            self.frame_label.is_cropping = False
         elif collection == self.collection_s:
             self.collection_s = None
         self.update_viewer()
@@ -84,10 +115,7 @@ class FrameViewerSelect(FrameViewer):
                 frame_index = self.frame_slider.value()
                 frame = frames[frame_index].copy()
                 self.collection_s.add_frame(frame)
-                self.update_collection.emit(
-                    self.collection_v.collection_id if self.collection_v is not None else None,
-                    self.collection_s.collection_id if self.collection_s is not None else None
-                )
+                self.update_collection_list()
         except Exception as e:
             print(f"Viewer Add Frame to Collection Failed: {e}")
 
@@ -97,10 +125,13 @@ class FrameViewerSelect(FrameViewer):
             if delete_enabled:
                 frame_index = self.frame_slider.value()
                 self.collection_s.delete_frame_by_index(frame_index)
-                self.update_collection.emit(
-                    self.collection_v.collection_id if self.collection_v is not None else None,
-                    self.collection_s.collection_id if self.collection_s is not None else None
-                )
+                self.update_collection_list()
                 self.update_viewer(frame_index - 1)
         except Exception as e:
             print(f"Viewer Delete Frame From Collection Failed: {e}")
+
+    def update_collection_list(self):
+        self.update_collection.emit(
+            self.collection_v.collection_id if self.collection_v is not None else None,
+            self.collection_s.collection_id if self.collection_s is not None else None
+        )

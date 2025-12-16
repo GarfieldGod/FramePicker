@@ -3,6 +3,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QLineEdit, QHBoxLayout
 
 from src.collection.collection_manager import CollectionManager
+from ui.pages.custom_widget.crop_widget import CropLabel
 from ui.utils.ui_utils import UiUtils
 
 class FrameViewer(QWidget):
@@ -67,7 +68,7 @@ class FrameViewer(QWidget):
             if not is_empty and len(self.collection_v.frames) > index:
                 if len(self.collection_v.frames) <= index: index = len(self.collection_v.frames) - 1
                 if index < 0: index = 0
-                UiUtils.show_frame(self.frame_label, self.collection_v.frames[index])
+                self.show_frame(index)
                 self.frame_slider.setValue(index)
                 self.current_index_label.setEnabled(True)
                 self.frame_slider.setEnabled(True)
@@ -84,7 +85,7 @@ class FrameViewer(QWidget):
                 if value < 0 or value >= len(self.collection_v.frames):
                     return
                 self.current_index_label.setText(f"{value + 1}")
-                UiUtils.show_frame(self.frame_label, self.collection_v.frames[value])
+                self.show_frame(value)
         except Exception as e:
             print(f"Viewer Slider Change Failed: {e}")
 
@@ -95,7 +96,7 @@ class FrameViewer(QWidget):
                 if value < 0 or value >= len(self.collection_v.frames):
                     return
                 self.frame_slider.setValue(value)
-                UiUtils.show_frame(self.frame_label, self.collection_v.frames[value])
+                self.show_frame(value)
         except Exception as e:
             print(f"Viewer Slider Value Change Failed: {e}")
 
@@ -108,6 +109,15 @@ class FrameViewer(QWidget):
             self.update_viewer(viewing_index)
         except Exception as e:
             print(f"Viewer View Collection Failed: {e}")
+
+    def show_frame(self, frame_index):
+        if self.collection_v is None or len(self.collection_v.frames) <= frame_index or frame_index < 0: return
+
+        frame = self.collection_v.frames[frame_index]
+        if isinstance(self.frame_label, CropLabel):
+            self.frame_label.set_image(frame)
+        else:
+            UiUtils.show_frame(self.frame_label, frame)
 
     def reset(self):
         self.collection_v = None

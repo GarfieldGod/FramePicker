@@ -38,6 +38,13 @@ class FrameCollector(QWidget):
         self.list_collections.itemClicked.connect(self.select_collection)
         self.list_collections.setFocusPolicy(Qt.NoFocus)
 
+        self.open_file_button.on_decode_success.connect(
+            lambda signal_dict:(
+                col := CollectionManager.create_collection("Decode Collection", signal_dict, CollectionType.DECODE),
+                self.create_collection(col, auto_view=True)
+            )
+        )
+
     def init_ui_layout(self):
         layout_collector = QVBoxLayout(self)
 
