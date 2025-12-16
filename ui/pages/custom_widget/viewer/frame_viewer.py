@@ -17,9 +17,9 @@ class FrameViewer(QWidget):
         else:
             self.frame_label = frame_label
 
-        self.slider_value_max = QLabel()
-        self.slider_value_min = QLabel()
-        self.slider_value = QLineEdit()
+        self.max_index_label = QLabel()
+        self.min_index_label = QLabel()
+        self.current_index_label = QLineEdit()
 
         self.frame_slider = QSlider(Qt.Horizontal)
 
@@ -30,11 +30,11 @@ class FrameViewer(QWidget):
         self.frame_label.setStyleSheet("border: 1px solid #ccc;")
         self.frame_label.setAlignment(Qt.AlignCenter)
 
-        self.slider_value.setAlignment(Qt.AlignCenter)
-        self.slider_value.setFixedWidth(100)
-        self.slider_value.textEdited.connect(self.on_slider_value_changed)
-        self.slider_value_max.setAlignment(Qt.AlignRight)
-        self.slider_value.setEnabled(False)
+        self.current_index_label.setAlignment(Qt.AlignCenter)
+        self.current_index_label.setFixedWidth(100)
+        self.current_index_label.textEdited.connect(self.on_slider_value_changed)
+        self.max_index_label.setAlignment(Qt.AlignRight)
+        self.current_index_label.setEnabled(False)
 
         self.frame_slider.setSingleStep(1)
         self.frame_slider.setEnabled(False)
@@ -45,9 +45,9 @@ class FrameViewer(QWidget):
         self.layout_widget.setContentsMargins(0, 0, 0, 0)
 
         value_layout = QHBoxLayout()
-        value_layout.addWidget(self.slider_value_min)
-        value_layout.addWidget(self.slider_value)
-        value_layout.addWidget(self.slider_value_max)
+        value_layout.addWidget(self.min_index_label)
+        value_layout.addWidget(self.current_index_label)
+        value_layout.addWidget(self.max_index_label)
 
         self.layout_widget.addWidget(self.frame_label,1)
         self.layout_widget.addLayout(value_layout)
@@ -55,25 +55,25 @@ class FrameViewer(QWidget):
 
     def update_viewer(self, index=0):
         try:
-            frames_empty = self.collection_v is None or len(self.collection_v.frames) == 0
-            total_frame_index = 0 if frames_empty else len(self.collection_v.frames)
-            min_frame_index = 0 if frames_empty else 1
-            min_frame_str = f"{min_frame_index}"
+            is_empty = self.collection_v is None or len(self.collection_v.frames) == 0
+            total_frame_index = 0 if is_empty else len(self.collection_v.frames)
+            min_frame_index = 0 if is_empty else 1
             self.frame_slider.setRange(0, total_frame_index - 1)
-            self.frame_slider.setValue(min_frame_index)
 
-            self.slider_value.setText(min_frame_str if not frames_empty else "")
-            self.slider_value_min.setText(min_frame_str if not frames_empty else "")
-            self.slider_value_max.setText(f"{total_frame_index}" if not frames_empty else "")
+            self.current_index_label.setText(f"{min_frame_index}" if not is_empty else "")
+            self.min_index_label.setText(f"{min_frame_index}" if not is_empty else "")
+            self.max_index_label.setText(f"{total_frame_index}" if not is_empty else "")
 
-            if not frames_empty and len(self.collection_v.frames) > index >= 0:
+            if not is_empty and len(self.collection_v.frames) > index:
+                if len(self.collection_v.frames) <= index: index = len(self.collection_v.frames) - 1
+                if index < 0: index = 0
                 UiUtils.show_frame(self.frame_label, self.collection_v.frames[index])
                 self.frame_slider.setValue(index)
-                self.slider_value.setEnabled(True)
+                self.current_index_label.setEnabled(True)
                 self.frame_slider.setEnabled(True)
             else:
                 self.frame_label.setPixmap(QPixmap())
-                self.slider_value.setEnabled(False)
+                self.current_index_label.setEnabled(False)
                 self.frame_slider.setEnabled(False)
         except Exception as e:
             print(f"update_viewer Failed: {e}")
@@ -83,14 +83,14 @@ class FrameViewer(QWidget):
             if self.collection_v is not None:
                 if value < 0 or value >= len(self.collection_v.frames):
                     return
-                self.slider_value.setText(f"{value + 1}")
+                self.current_index_label.setText(f"{value + 1}")
                 UiUtils.show_frame(self.frame_label, self.collection_v.frames[value])
         except Exception as e:
             print(f"Viewer Slider Change Failed: {e}")
 
     def on_slider_value_changed(self):
         try:
-            value = int(self.slider_value.text()) - 1
+            value = self.frame_slider.value()
             if self.collection_v is not None:
                 if value < 0 or value >= len(self.collection_v.frames):
                     return

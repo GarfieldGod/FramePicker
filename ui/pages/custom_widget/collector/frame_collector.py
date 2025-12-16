@@ -79,9 +79,9 @@ class FrameCollector(QWidget):
 
             for item in selected_items:
                 widget = self.list_collections.itemWidget(item)
-                # if widget is not None and len(widget.collection.frames) > 0:
-                dlg = MessageBox("Are you sure you want to delete the collection?\n"
-                                 "\nThis collection is not empty!")
+                if widget is not None and len(widget.collection.frames) > 0:
+                    dlg = MessageBox("Are you sure you want to delete the collection?\n"
+                                     "\nThis collection is not empty!")
                 if dlg.exec_() != QDialog.Accepted:
                     return
                 self.on_delete.emit(widget.collection.collection_id)
@@ -93,7 +93,7 @@ class FrameCollector(QWidget):
         try:
             widget_collection = self.list_collections.itemWidget(item)
             if isinstance(widget_collection, CollectionWidget):
-                self.reset_selected_collection(widget_collection)
+                self.reset_selected_collection(widget_collection.collection.collection_id)
                 self.on_select_change.emit(widget_collection.collection.collection_id)
         except Exception as e:
             print(f"Select Change Failed: {e}")
@@ -107,14 +107,14 @@ class FrameCollector(QWidget):
         except Exception as e:
             print(f"View Change Failed: {e}")
 
-    def reset_selected_collection(self, selected_widget=None):
+    def reset_selected_collection(self, collection_id):
         try:
             item_count = self.list_collections.count()
             for index in range(item_count):
                 item = self.list_collections.item(index)
                 widget = self.list_collections.itemWidget(item)
                 if isinstance(widget, CollectionWidget):
-                    if selected_widget == widget:
+                    if widget.collection.collection_id == collection_id:
                         widget.selected()
                     else:
                         widget.not_selected()
@@ -135,14 +135,19 @@ class FrameCollector(QWidget):
         except Exception as e:
             print(f"Reset View Change Failed: {e}")
 
-    def update_list(self):
+    def update_list(self, src_id=None, dst_id=None):
         try:
             self.list_collections.clear()
             for collection in CollectionManager.get_all_collections().values():
                 self.create_collection(collection)
+
+            if src_id is not None:
+                self.reset_view_collection(src_id)
+
+            if dst_id is not None:
+                self.reset_selected_collection(dst_id)
         except Exception as e:
             print(f"Update List Failed: {e}")
-
 
 vStr="src"
 sStr="dst"

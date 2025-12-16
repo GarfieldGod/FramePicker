@@ -8,7 +8,7 @@ from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 class FrameViewerSelect(FrameViewer):
     collection_s = None
-    update_collection = pyqtSignal(int)
+    update_collection = pyqtSignal(int, int)
 
     def __init__(self, frame_label=None, parent=None):
         self.button_add = QPushButton("Add to Selected Collection")
@@ -81,10 +81,13 @@ class FrameViewerSelect(FrameViewer):
         frames = self.collection_v.frames
         try:
             if add_enabled:
-                frame_index = int(self.slider_value.text()) - 1
+                frame_index = self.frame_slider.value()
                 frame = frames[frame_index].copy()
                 self.collection_s.add_frame(frame)
-                self.update_collection.emit(self.collection_s.collection_id)
+                self.update_collection.emit(
+                    self.collection_v.collection_id if self.collection_v is not None else None,
+                    self.collection_s.collection_id if self.collection_s is not None else None
+                )
         except Exception as e:
             print(f"Viewer Add Frame to Collection Failed: {e}")
 
@@ -92,9 +95,12 @@ class FrameViewerSelect(FrameViewer):
         _, delete_enabled = self.get_add_delete_enabled()
         try:
             if delete_enabled:
-                frame_index = int(self.slider_value.text()) - 1
+                frame_index = self.frame_slider.value()
                 self.collection_s.delete_frame_by_index(frame_index)
-                self.update_collection.emit(self.collection_s.collection_id)
+                self.update_collection.emit(
+                    self.collection_v.collection_id if self.collection_v is not None else None,
+                    self.collection_s.collection_id if self.collection_s is not None else None
+                )
                 self.update_viewer(frame_index - 1)
         except Exception as e:
             print(f"Viewer Delete Frame From Collection Failed: {e}")
