@@ -1,8 +1,9 @@
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QStackedWidget, QWidget
 
 from src.collection.collection import CollectionType
 from src.collection.collection_manager import CollectionManager
+from ui.pages.custom_widget.function_widget import FunctionWidget
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 
@@ -14,8 +15,8 @@ class FrameViewerSelect(FrameViewer):
         self.button_add = QPushButton("Add to Selected Collection")
         self.button_delete = QPushButton("Delete from Viewing Collection")
 
-        self.start_crop = QPushButton("Crop")
-        self.apply_crop = QPushButton("Apply")
+        self.frame_label = frame_label
+        self.function_widget = FunctionWidget(self)
 
         super(FrameViewerSelect, self).__init__(frame_label, parent)
 
@@ -27,17 +28,12 @@ class FrameViewerSelect(FrameViewer):
         self.button_delete.setEnabled(False)
         self.button_delete.clicked.connect(self.delete_from_collection)
 
-        self.start_crop.clicked.connect(self.start_corp_func)
-        self.apply_crop.clicked.connect(self.apply_corp_func)
-
     def init_layout(self):
-        super(FrameViewerSelect, self).init_layout()
+        super(FrameViewerSelect, self).init_layout(self.function_widget)
 
         collection_buttons_layout = QHBoxLayout()
         collection_buttons_layout.addWidget(self.button_add)
         collection_buttons_layout.addWidget(self.button_delete)
-        collection_buttons_layout.addWidget(self.start_crop)
-        collection_buttons_layout.addWidget(self.apply_crop)
 
         self.layout_widget.addLayout(collection_buttons_layout)
 

@@ -53,6 +53,13 @@ class CropLabel(QLabel):
 
         # 切换帧时调整裁剪框位置
         self._resize_crop_rect()
+
+    def start_cropping(self):
+        self.is_cropping = True
+        self._init_crop_rect_to_center()
+
+    def end_cropping(self):
+        self.is_cropping = False
         self._init_crop_rect_to_center()
 
     def _resize_crop_rect(self):
@@ -67,7 +74,7 @@ class CropLabel(QLabel):
             )
 
     def _init_crop_rect_to_center(self):
-        if not hasattr(self, 'scaled_pixmap_size') or self.is_cropping:
+        if not hasattr(self, 'scaled_pixmap_size'):
             return
 
         # 获取缩放后 pixmap 的尺寸和偏移（居中）
@@ -378,6 +385,13 @@ class CropLabel(QLabel):
             return np.array([])
 
         return cv_frame[y:y + h, x:x + w]
+
+    def set_ratio(self, ratio):
+        if not isinstance(self.aspect_ratio, float) or self.aspect_ratio == 0:
+            raise Exception("Aspect ratio must be float and can't be zero")
+        self.aspect_ratio = ratio
+        self._init_crop_rect_to_center()
+        self.update()
 
 class MainWindow(QWidget):
     def __init__(self):

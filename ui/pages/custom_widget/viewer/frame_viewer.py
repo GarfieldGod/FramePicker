@@ -41,7 +41,7 @@ class FrameViewer(QWidget):
         self.frame_slider.setEnabled(False)
         self.frame_slider.valueChanged.connect(self.on_slider_changed)
 
-    def init_layout(self):
+    def init_layout(self, space_widget=None):
         self.layout_widget = QVBoxLayout(self)
         self.layout_widget.setContentsMargins(0, 0, 0, 0)
 
@@ -51,6 +51,8 @@ class FrameViewer(QWidget):
         value_layout.addWidget(self.max_index_label)
 
         self.layout_widget.addWidget(self.frame_label,1)
+        if space_widget:
+            self.layout_widget.addWidget(space_widget)
         self.layout_widget.addLayout(value_layout)
         self.layout_widget.addWidget(self.frame_slider)
 
