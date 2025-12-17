@@ -89,10 +89,11 @@ class FrameCollector(QWidget):
                 if widget is not None and len(widget.collection.frames) > 0:
                     dlg = MessageBox("Are you sure you want to delete the collection?\n"
                                      "\nThis collection is not empty!")
-                if dlg.exec_() != QDialog.Accepted:
-                    return
+                    if dlg.exec_() != QDialog.Accepted:
+                        return
                 self.on_delete.emit(widget.collection.collection_id)
                 self.list_collections.takeItem(self.list_collections.row(item))
+                CollectionManager.remove_collection(widget.collection.collection_id)
         except Exception as e:
             print(f"Delete collection error: {e}")
 

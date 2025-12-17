@@ -51,10 +51,17 @@ class CollectionManager:
         return True
 
     @classmethod
-    def remove_collection(cls, collection: Collection) -> bool:
+    def remove_collection(cls, arg) -> bool:
         with cls._lock:
-            if collection.collection_id in cls._COLLECTIONS:
-                cls._COLLECTIONS.pop(collection.collection_id)
+            if isinstance(arg, Collection):
+                collection_id = arg.collection_id
+            elif isinstance(arg, int):
+                collection_id = arg
+            else:
+                return False
+
+            if collection_id in cls._COLLECTIONS:
+                cls._COLLECTIONS.pop(collection_id)
                 return True
         return False
 

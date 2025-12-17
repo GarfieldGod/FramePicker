@@ -1,9 +1,9 @@
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QStackedWidget, QWidget
+from PyQt5.QtWidgets import QPushButton, QHBoxLayout
 
 from src.collection.collection import CollectionType
 from src.collection.collection_manager import CollectionManager
-from ui.pages.custom_widget.function_widget import FunctionWidget
+from ui.pages.custom_widget.viewer.functions.function_widget import FunctionWidget
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 
@@ -20,12 +20,12 @@ class FrameViewerSelect(FrameViewer):
 
         super(FrameViewerSelect, self).__init__(frame_label, parent)
 
+        self.update_viewer()
+
     def init_ui(self):
         super(FrameViewerSelect, self).init_ui()
 
-        self.button_add.setEnabled(False)
         self.button_add.clicked.connect(self.add_to_collection)
-        self.button_delete.setEnabled(False)
         self.button_delete.clicked.connect(self.delete_from_collection)
 
     def init_layout(self):
@@ -41,6 +41,8 @@ class FrameViewerSelect(FrameViewer):
         super(FrameViewerSelect, self).update_viewer(index)
 
         self.update_add_delete_button()
+        is_func_enabled = self.collection_v is not None and self.collection_v.collection_type != CollectionType.DECODE and len(self.collection_v.frames) != 0
+        self.function_widget.set_function_enabled(is_func_enabled)
 
     def start_corp_func(self):
         if not self.collection_v: return
@@ -80,7 +82,7 @@ class FrameViewerSelect(FrameViewer):
         if collection is None: return
         if collection == self.collection_v:
             self.collection_v = None
-            self.frame_label.is_cropping = False
+            self.function_widget.reset()
         elif collection == self.collection_s:
             self.collection_s = None
         self.update_viewer()
@@ -105,9 +107,9 @@ class FrameViewerSelect(FrameViewer):
 
     def add_to_collection(self):
         add_enabled, _ = self.get_add_delete_enabled()
-        frames = self.collection_v.frames
         try:
             if add_enabled:
+                frames = self.collection_v.frames
                 frame_index = self.frame_slider.value()
                 frame = frames[frame_index].copy()
                 self.collection_s.add_frame(frame)
@@ -116,6 +118,7 @@ class FrameViewerSelect(FrameViewer):
             print(f"Viewer Add Frame to Collection Failed: {e}")
 
     def delete_from_collection(self):
+        if self.collection_v is None or self.collection_s is None: return
         _, delete_enabled = self.get_add_delete_enabled()
         try:
             if delete_enabled:
@@ -131,3 +134,8 @@ class FrameViewerSelect(FrameViewer):
             self.collection_v.collection_id if self.collection_v is not None else None,
             self.collection_s.collection_id if self.collection_s is not None else None
         )
+
+    def view_collection(self, collection_id, viewing_index):
+        super().view_collection(collection_id, viewing_index)
+
+        self.function_widget.reset()

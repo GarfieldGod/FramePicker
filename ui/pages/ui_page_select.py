@@ -1,9 +1,7 @@
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 
-from src.collection.collection import CollectionType
-from src.collection.collection_manager import CollectionManager
 from ui.pages.custom_widget.collector.frame_collector import FrameCollector
-from ui.pages.custom_widget.crop_widget import CropLabel
+from ui.pages.custom_widget.viewer.functions.crop_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer_select import FrameViewerSelect
 from ui.template.ui_page import PageContent, Container
 

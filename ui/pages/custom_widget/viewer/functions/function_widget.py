@@ -1,9 +1,8 @@
 import enum
 
-from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton
 
-from ui.pages.custom_widget.crop_widget import CropLabel
+from ui.pages.custom_widget.viewer.functions.crop_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 class FunctionType(enum.Enum):
@@ -33,8 +32,8 @@ class FunctionWidget(QWidget):
         crop_setting = CropFunctionWidget(frame_viewer, self)
 
         self.native_function = {
-            FunctionType.CROP : (crop_setting.start_corp_func, crop_setting.apply_crop_func, crop_setting.cancel_corp_func),
-            # FunctionType.CUT: (lambda :self.start_func(FunctionType.CUT), self.apply_crop_func, self.cancel_corp_func),
+            FunctionType.CROP : (crop_setting.start_corp_func, crop_setting.apply_crop_func, crop_setting.cancel_crop_func),
+            # FunctionType.CUT: (lambda :self.start_func(FunctionType.CUT), self.apply_crop_func, self.cancel_crop_func),
         }
 
         self.function_name = {
@@ -65,12 +64,14 @@ class FunctionWidget(QWidget):
         self.native_function.get(self.current_func)[index]()
 
     def init_func(self):
+        self.function_buttons = {}
         self.function_layout.addStretch()
         for key, value in self.native_function.items():
             function_button = QPushButton(str(self.function_name[key][1]))
             function_button.setFixedSize(50, 30)
             function_button.clicked.connect(value[0])
             self.function_layout.addWidget(function_button)
+            self.function_buttons[key] = function_button
         self.function_layout.addStretch()
 
     def start_func(self, func_type):
@@ -83,6 +84,21 @@ class FunctionWidget(QWidget):
         self.function_widget.show()
         self.setting_widget.hide()
         self.current_func = None
+
+    def set_function_enabled(self, is_enabled, function_type=None):
+        if function_type is None:
+            for button in self.function_buttons.values():
+                button.setEnabled(is_enabled)
+        else:
+            button = self.function_buttons.get(function_type)
+            if button is not None:
+                button.setEnabled(is_enabled)
+
+    def reset(self):
+        for index in range(self.stack.count()):
+            widget = self.stack.widget(index)
+            if widget is not None:
+                widget.reset()
 
 class CropFunctionWidget(QWidget):
     ratio_map = {
@@ -130,11 +146,14 @@ class CropFunctionWidget(QWidget):
 
             self.frame_viewer.update_collection_list()
             self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
-            self.cancel_corp_func()
+            self.cancel_crop_func()
         except Exception as e:
-            print(f"Apply crop func error: {e}")
+            print(f"Apply functions func error: {e}")
 
-    def cancel_corp_func(self):
+    def cancel_crop_func(self):
         self.frame_viewer.frame_label.end_cropping()
 
         self.function_widget.cancel_func()
+
+    def reset(self):
+        self.cancel_crop_func()

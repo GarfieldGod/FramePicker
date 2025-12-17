@@ -23,7 +23,7 @@ class CropLabel(QLabel):
         self.handle_color = QColor(100, 255, 200)  # 红色
         self.handle_hover_color = QColor(0, 255, 0)  # 悬停时绿色（可选）
         self.is_cropping = False
-        self.aspect_ratio = 16 / 9
+        self.aspect_ratio = None
 
     def set_image(self, cv_frame):
         if cv_frame is None or cv_frame.size == 0:
@@ -119,13 +119,13 @@ class CropLabel(QLabel):
         on_top = abs(y - top) <= self.handle_size
         on_bottom = abs(y - bottom) <= self.handle_size
 
-        if on_left and on_top:
+        if on_left and on_top and not self.aspect_ratio:
             return 'top_left'
-        elif on_right and on_top:
+        elif on_right and on_top and not self.aspect_ratio:
             return 'top_right'
-        elif on_left and on_bottom:
+        elif on_left and on_bottom and not self.aspect_ratio:
             return 'bottom_left'
-        elif on_right and on_bottom:
+        elif on_right and on_bottom and not self.aspect_ratio:
             return 'bottom_right'
         elif on_left:
             return 'left'
@@ -194,14 +194,6 @@ class CropLabel(QLabel):
         try:
             if self.drag_mode == 'move':
                 new_rect.translate(delta)
-            # elif self.drag_mode == 'top_left':
-            #     new_rect.setTopLeft(old_rect.topLeft() + delta)
-            # elif self.drag_mode == 'top_right':
-            #     new_rect.setTopRight(old_rect.topRight() + delta)
-            # elif self.drag_mode == 'bottom_left':
-            #     new_rect.setBottomLeft(old_rect.bottomLeft() + delta)
-            # elif self.drag_mode == 'bottom_right':
-            #     new_rect.setBottomRight(old_rect.bottomRight() + delta)
             elif self.drag_mode == 'top':
                 new_rect.setTop(old_rect.top() + delta.y())
                 width = new_rect.height() * self.aspect_ratio
@@ -387,11 +379,14 @@ class CropLabel(QLabel):
         return cv_frame[y:y + h, x:x + w]
 
     def set_ratio(self, ratio):
-        if not isinstance(self.aspect_ratio, float) or self.aspect_ratio == 0:
-            raise Exception("Aspect ratio must be float and can't be zero")
-        self.aspect_ratio = ratio
-        self._init_crop_rect_to_center()
-        self.update()
+        try:
+            if (not isinstance(self.aspect_ratio, float) and self.aspect_ratio is not None) or self.aspect_ratio == 0:
+                raise Exception("Aspect ratio must be float and can't be zero")
+            self.aspect_ratio = ratio
+            self._init_crop_rect_to_center()
+            self.update()
+        except Exception as e:
+            print(f"set ratio failed: {e}")
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -400,7 +395,7 @@ class MainWindow(QWidget):
         self.resize(800, 600)
 
         # 使用摄像头或静态图
-        video_path = "../../../input/input.mp4"
+        video_path = "../../../../../input/input.mp4"
         frame_picker = FramePicker(video_path)
 
         print(f"fps: {frame_picker.fps}")
