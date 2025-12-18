@@ -1,7 +1,8 @@
 import os
+import sys
 
 from PyQt5.QtCore import Qt, QRectF, QSize, QPoint
-from PyQt5.QtGui import QPainter, QBrush, QPainterPath, QPixmap
+from PyQt5.QtGui import QPainter, QBrush, QPainterPath, QPixmap, QIcon
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QListWidget, QListWidgetItem,
                              QStackedWidget, QLabel, QPushButton, QApplication)
@@ -11,6 +12,7 @@ from ui.template.element.ui_element_icon import AppIconArea
 from ui.template.element.ui_element_navigation import NavigationArea
 from ui.template.element.ui_element_space import SpaceArea
 from ui.template.element.ui_element_title import TitleBarArea
+from ui.template.ui_custom_function import get_ui_resource_path
 from ui.template.ui_page import PageContent, PageNavigation
 from ui.template.ui_custom_color import CustomColor
 
@@ -22,7 +24,7 @@ class MainWindow(QMainWindow):
     content_background_color = CustomColor.yellow_247_243_232
 
     def __init__(
-            self, title_text="", title_desc="", icon_path="", window_size=QSize(640, 480),
+            self, title_text="", title_desc="", icon_path="", window_icon="", icon_size=QSize(50,50), window_size=QSize(640, 480),
             show_min_button=True,show_max_button=True,show_close_button=True,
             navigation_width=90, title_bar_height=50, space_width=60,
             round_radius=25, window_padding=0
@@ -33,6 +35,8 @@ class MainWindow(QMainWindow):
             self.title_text = title_text
             self.title_desc = title_desc
             self.icon_path = icon_path
+            self.window_icon = window_icon if window_icon else icon_path
+            self.icon_size = icon_size
             self.window_size = window_size
             self.navigation_width = navigation_width
             self.title_bar_height = title_bar_height
@@ -48,7 +52,7 @@ class MainWindow(QMainWindow):
 
             # elements
             self.central_widget = QWidget()
-            self.app_icon = AppIconArea(50,50)
+            self.app_icon = AppIconArea(icon_path=self.icon_path, size=self.icon_size)
             self.navigation = NavigationArea(self.navigation_width)
             self.title_bar = TitleBarArea(
                 title_text=self.title_text,
@@ -68,6 +72,7 @@ class MainWindow(QMainWindow):
             print(e)
 
     def init_window(self):
+        self.setWindowIcon(QIcon(self.window_icon))
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(self.window_size)
@@ -108,7 +113,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(content_main_layout)
 
     def load_qss(self):
-        qss_path = os.path.join(os.path.dirname(__file__), "ui_main_window.qss")
+        qss_path = os.path.join(get_ui_resource_path(), "qss", "ui_main_window.qss")
         try:
             with open(qss_path, "r", encoding="utf-8") as f:
                 qss_content = f.read()
@@ -123,7 +128,7 @@ class MainWindow(QMainWindow):
             raise Exception("invalid navigation or page")
 
         navigation_item = QListWidgetItem()
-        navigation_item.setSizeHint(QSize(60, 60))
+        navigation_item.setSizeHint(QSize(60, 80))
         self.navigation.addItem(navigation_item)
         self.navigation.setItemWidget(navigation_item, navigation)
         self.navigation.itemClicked.connect(self.switch_page)
@@ -175,6 +180,9 @@ class MainWindow(QMainWindow):
             self.content.setCurrentIndex(current_index)
         except Exception as e:
             print(e)
+
+    def on_window_close(self):
+        self.close()
 
     def mousePressEvent(self, event):
         title_bar = self.title_bar
