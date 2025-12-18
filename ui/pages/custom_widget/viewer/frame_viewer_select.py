@@ -54,7 +54,7 @@ class FrameViewerSelect(FrameViewer):
 
         self.update_viewer(self.frame_slider.value())
 
-    def apply_corp_func(self):
+    def apply_crop_func(self):
         if not self.frame_label.is_cropping: return
         try:
             for index, frame in enumerate(self.collection_v.frames):
@@ -62,7 +62,17 @@ class FrameViewerSelect(FrameViewer):
 
             self.update_collection_list()
             self.update_viewer(self.frame_slider.value())
-            self.start_corp_func()
+        except Exception as e:
+            print(e)
+
+    def apply_resize_func(self):
+        if not self.frame_label.is_resizing: return
+        try:
+            for index, frame in enumerate(self.collection_v.frames):
+                self.collection_v.frames[index] = self.frame_label.resize_image(frame)
+
+            self.update_collection_list()
+            self.update_viewer(self.frame_slider.value())
         except Exception as e:
             print(e)
 

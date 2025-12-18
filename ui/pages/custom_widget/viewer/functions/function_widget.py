@@ -1,13 +1,13 @@
 import enum
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton, QLineEdit
 
-from ui.pages.custom_widget.viewer.functions.crop_widget import CropLabel
+from ui.pages.custom_widget.viewer.functions.image_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 class FunctionType(enum.Enum):
     CROP = "Crop"
-    CUT = "Cut"
+    RESIZE = "Resize"
 
 class FunctionWidget(QWidget):
     def __init__(self, frame_viewer, height=80, parent=None):
@@ -30,18 +30,22 @@ class FunctionWidget(QWidget):
         self.init_layout()
 
         crop_setting = CropFunctionWidget(frame_viewer, self)
+        resize_setting = ResizeFunctionWidget(frame_viewer, self)
 
         self.native_function = {
-            FunctionType.CROP : (crop_setting.start_corp_func, crop_setting.apply_crop_func, crop_setting.cancel_crop_func),
-            # FunctionType.CUT: (lambda :self.start_func(FunctionType.CUT), self.apply_crop_func, self.cancel_crop_func),
+            FunctionType.CROP : self.get_function(crop_setting),
+            FunctionType.RESIZE: self.get_function(resize_setting),
+            # FunctionType.CUT: (self.start_func, self.apply_func, self.cancel_func),
         }
 
         self.function_name = {
             FunctionType.CROP : (0, "Crop"),
+            FunctionType.RESIZE: (1, "Resize")
             # FunctionType.CUT : (1, "Cut")
         }
 
         self.stack.addWidget(crop_setting)
+        self.stack.addWidget(resize_setting)
 
         self.init_func()
 
@@ -58,6 +62,9 @@ class FunctionWidget(QWidget):
         self.cancel_func_button.setFixedSize(30, 30)
         self.apply_func_button.clicked.connect(lambda : self.run_function(1))
         self.cancel_func_button.clicked.connect(lambda : self.run_function(2))
+
+    def get_function(self, widget):
+        return widget.start_func, widget.apply_func, widget.cancel_func
 
     def run_function(self, index):
         if self.current_func is None: return
@@ -128,32 +135,110 @@ class CropFunctionWidget(QWidget):
         for key, value in self.ratio_map.items():
             button = QPushButton(str(key))
             button.setFixedSize(50, 30)
-            button.clicked.connect(lambda _, v=value: (self.frame_viewer.frame_label.set_ratio(v), print(v)))
+            button.clicked.connect(lambda _, v=value: self.frame_viewer.frame_label.set_ratio(v))
             layout.addWidget(button)
 
-    def start_corp_func(self):
+    def start_func(self):
         if not self.frame_viewer.collection_v: return
         self.frame_viewer.frame_label.start_cropping()
         self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
 
         self.function_widget.start_func(FunctionType.CROP)
 
-    def apply_crop_func(self):
+    def apply_func(self):
         if not self.frame_viewer.frame_label.is_cropping: return
         try:
-            for index, frame in enumerate(self.frame_viewer.collection_v.frames):
-                self.frame_viewer.collection_v.frames[index] = self.frame_viewer.frame_label.crop_image(frame)
-
-            self.frame_viewer.update_collection_list()
-            self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
-            self.cancel_crop_func()
+            self.frame_viewer.apply_crop_func()
+            self.cancel_func()
         except Exception as e:
             print(f"Apply functions func error: {e}")
 
-    def cancel_crop_func(self):
+    def cancel_func(self):
         self.frame_viewer.frame_label.end_cropping()
 
         self.function_widget.cancel_func()
 
     def reset(self):
-        self.cancel_crop_func()
+        self.cancel_func()
+
+class ResizeFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(ResizeFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        self.height_input = QLineEdit()
+        self.width_input = QLineEdit()
+
+        self.origin_size = None
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+
+        layout.addWidget(self.width_input)
+        layout.addWidget(self.height_input)
+        self.width_input.textEdited.connect(self.update_resize)
+        self.height_input.textEdited.connect(self.update_resize)
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+            self.origin_size = self.frame_viewer.frame_label.get_original_size()
+            self.width_input.setText(str(self.origin_size.width()))
+            self.height_input.setText(str(self.origin_size.height()))
+            self.frame_viewer.frame_label.start_resizing()
+
+            self.function_widget.start_func(FunctionType.RESIZE)
+        except Exception as e:
+            print(f"start resize failed: {e}")
+
+    def update_resize(self):
+        try:
+            width = int(self.width_input.text())
+            height = int(self.height_input.text())
+
+            self.frame_viewer.frame_label.set_size(width, height)
+            self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
+        except Exception as e:
+            print(f"update resize failed: {e}")
+
+    def apply_func(self):
+        try:
+            if self.check_size():
+                self.frame_viewer.apply_resize_func()
+                self.origin_size = None
+            self.cancel_func()
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            if self.check_size():
+                self.width_input.setText(str(self.origin_size.width()))
+                self.height_input.setText(str(self.origin_size.height()))
+                self.update_resize()
+
+            self.origin_size = None
+            self.frame_viewer.frame_label.end_resizing()
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel resize failed: {e}")
+
+    def check_size(self):
+        if self.origin_size is not None:
+            width = self.origin_size.width()
+            height = self.origin_size.height()
+            current_width = int(self.width_input.text())
+            current_height = int(self.height_input.text())
+            if current_width != width or current_height != height:
+                return True
+        return False
+
+    def reset(self):
+        self.cancel_func()

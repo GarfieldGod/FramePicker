@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QLineEdit, QHBoxLayout
 
 from src.collection.collection_manager import CollectionManager
-from ui.pages.custom_widget.viewer.functions.crop_widget import CropLabel
+from ui.pages.custom_widget.viewer.functions.image_widget import CropLabel
 from ui.utils.ui_utils import UiUtils
 
 class FrameViewer(QWidget):

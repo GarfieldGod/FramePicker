@@ -22,12 +22,18 @@ class CropLabel(QLabel):
         self.handle_size = 8
         self.handle_color = QColor(100, 255, 200)  # 红色
         self.handle_hover_color = QColor(0, 255, 0)  # 悬停时绿色（可选）
+
         self.is_cropping = False
         self.aspect_ratio = None
+
+        self.is_resizing = False
+        self.resize_value = None
 
     def set_image(self, cv_frame):
         if cv_frame is None or cv_frame.size == 0:
             return
+
+        cv_frame = self.resize_image(cv_frame)
 
         orig_h, orig_w = cv_frame.shape[:2]
 
@@ -54,13 +60,24 @@ class CropLabel(QLabel):
         # 切换帧时调整裁剪框位置
         self._resize_crop_rect()
 
+    def get_original_size(self):
+        return self.original_size
+
     def start_cropping(self):
         self.is_cropping = True
+        self.aspect_ratio = None
         self._init_crop_rect_to_center()
 
     def end_cropping(self):
         self.is_cropping = False
+        self.aspect_ratio = None
         self._init_crop_rect_to_center()
+
+    def start_resizing(self):
+        self.is_resizing = True
+
+    def end_resizing(self):
+        self.is_resizing = False
 
     def _resize_crop_rect(self):
         if self.original_pixmap and self.is_cropping:
@@ -378,15 +395,30 @@ class CropLabel(QLabel):
 
         return cv_frame[y:y + h, x:x + w]
 
+    def resize_image(self, cv_frame):
+        if not self.is_resizing or self.resize_value is None: return cv_frame
+        cv_frame = cv2.resize(cv_frame, self.resize_value, interpolation=cv2.INTER_AREA)
+        return cv_frame
+
     def set_ratio(self, ratio):
         try:
-            if (not isinstance(self.aspect_ratio, float) and self.aspect_ratio is not None) or self.aspect_ratio == 0:
+            if (not isinstance(ratio, float) and ratio is not None) or ratio == 0:
                 raise Exception("Aspect ratio must be float and can't be zero")
             self.aspect_ratio = ratio
             self._init_crop_rect_to_center()
             self.update()
         except Exception as e:
             print(f"set ratio failed: {e}")
+
+    def set_size(self, width, height):
+        try:
+            if width == 0 or height == 0:
+                raise Exception("Image size can't be zero")
+            self.resize_value = (width, height)
+
+            self.update()
+        except Exception as e:
+            print(f"set size failed: {e}")
 
 class MainWindow(QWidget):
     def __init__(self):
