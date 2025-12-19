@@ -20,6 +20,8 @@ class FrameViewerSelect(FrameViewer):
 
         super(FrameViewerSelect, self).__init__(frame_label, parent)
 
+        self.function_widget.init_func_widget()
+
         self.update_viewer()
 
     def init_ui(self):
@@ -42,7 +44,7 @@ class FrameViewerSelect(FrameViewer):
 
         self.update_add_delete_button()
         is_func_enabled = self.collection_v is not None and self.collection_v.collection_type != CollectionType.DECODE and len(self.collection_v.frames) != 0
-        self.function_widget.set_function_enabled(is_func_enabled)
+        self.function_widget.set_function_enabled(True)
 
     def start_corp_func(self):
         if not self.collection_v: return

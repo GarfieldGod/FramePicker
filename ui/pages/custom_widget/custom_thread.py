@@ -76,34 +76,43 @@ class NanoPrecisionPlayThread(QThread):
     next_frame_index = pyqtSignal(int)
     play_finished = pyqtSignal()
 
-    def __init__(self, total_frames: int = None, fps: int = None, start_index = 0, parent=None):
+    def __init__(self, total_frames: int = None, fps: int = None, parent=None):
         super().__init__(parent)
         self.total_frames = total_frames
         self.fps = fps
 
         self._is_playing = False
-        self.current_index = start_index
+        self.start_index = 0
+        self.current_index = 0
         self.start_nano = 0
 
-    def start_play(self):
-        if self.total_frames == 0:
+    def start_play(self, total_frames, fps, start_index):
+        if self.total_frames == 0 or start_index >= total_frames:
             return
+        self.total_frames = total_frames
+        self.fps = fps
+        self.current_index = start_index
+        self.start_index = start_index
         self._is_playing = True
-        self.current_index = 0
         self.start_nano = time.perf_counter_ns()
         self.start()
+        print(f"Thread Start Play")
 
     def stop_play(self):
         self._is_playing = False
         self.total_frames = None
         self.fps = None
+        self.start_index = 0
+        self.current_index = 0
         self.wait()
+        print(f"Thread Stop Play")
 
     def run(self):
         if not self.total_frames or not self.fps or self.fps == 0: return
 
         while self._is_playing and self.current_index < self.total_frames:
-            target_nano = self.start_nano + self.current_index * (1_000_000_000 / self.fps)
+            target_nano = self.start_nano + (self.current_index - self.start_index) * (1_000_000_000 / self.fps)
+
             current_nano = time.perf_counter_ns()
 
             if current_nano < target_nano:
