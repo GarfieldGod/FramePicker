@@ -11,7 +11,7 @@ from ui.pages.custom_widget.custom_dialog import ProgressDialog
 class FileOpenButton(QPushButton):
     frame_picker = None
     on_decode_failed = pyqtSignal(str)
-    on_decode_success = pyqtSignal(list)
+    on_decode_success = pyqtSignal(list, float)
 
     def __init__(self, text="File", parent=None):
         super(FileOpenButton, self).__init__(parent)
@@ -42,8 +42,8 @@ class FileOpenButton(QPushButton):
             self.frame_picker = FramePicker(file_path)
             self.frame_picker.decode()
             frames = list(self.frame_picker.get_all_frames().values())
-
-            self.on_decode_success.emit(frames)
+            fps = self.frame_picker.fps
+            self.on_decode_success.emit(frames, fps)
         except Exception as e:
             self.on_decode_failed.emit(f"Open File Failed {e}")
 
@@ -88,7 +88,8 @@ class FileOpenButton(QPushButton):
                 return
 
             frames = list(self.frame_picker.get_all_frames().values()).copy()
-            self.on_decode_success.emit(frames)
+            fps = self.frame_picker.fps
+            self.on_decode_success.emit(frames, fps)
         except Exception as e:
             print(e)
 

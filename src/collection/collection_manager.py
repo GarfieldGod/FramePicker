@@ -13,15 +13,15 @@ class CollectionManager:
         return cls._COLLECTIONS
 
     @classmethod
-    def create_collection(cls, collection_name: str = None, frames_list: list = None, collection_type: CollectionType = None) -> Collection:
+    def create_collection(cls,
+            collection_name: str = None, frames_list: list = None, collection_type: CollectionType = CollectionType.CUSTOM,
+            collection_fps: int = 0
+        ) -> Collection:
         if collection_name is None:
             collection_name = f'Empty Collection {cls._COLLECTION_ID}'
 
         if frames_list is None:
             frames_list = []
-
-        if collection_type is None:
-            collection_type = CollectionType.CUSTOM
 
         with cls._lock:
             collection_id = cls._COLLECTION_ID
@@ -29,7 +29,8 @@ class CollectionManager:
                 collection_name=collection_name,
                 frames_list=frames_list,
                 collection_type=collection_type,
-                collection_id=collection_id
+                collection_id=collection_id,
+                collection_fps=collection_fps
             )
             cls._COLLECTIONS[collection_id] = ret
             cls._COLLECTION_ID += 1

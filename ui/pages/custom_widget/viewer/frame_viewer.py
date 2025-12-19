@@ -1,8 +1,10 @@
+import time
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QLineEdit, QHBoxLayout
 
 from src.collection.collection_manager import CollectionManager
+from ui.pages.custom_widget.custom_thread import NanoPrecisionPlayThread
 from ui.pages.custom_widget.viewer.functions.image_widget import CropLabel
 from ui.utils.ui_utils import UiUtils
 
@@ -23,6 +25,9 @@ class FrameViewer(QWidget):
         self.current_index_label = QLineEdit()
 
         self.frame_slider = QSlider(Qt.Horizontal)
+
+        self.nano_play_thread = NanoPrecisionPlayThread(total_frames=None, fps=None, parent=self)
+        self.nano_play_thread.next_frame_index.connect(self.play_next_frame)
 
         self.init_ui()
         self.init_layout()
@@ -124,3 +129,40 @@ class FrameViewer(QWidget):
     def reset(self):
         self.collection_v = None
         self.update_viewer()
+
+    def play_collection(self):
+        try:
+            total_frame = len(self.collection_v.frames)
+            current_index = int(self.frame_slider.value())
+            if self.collection_v is None or total_frame <= 0 or current_index == total_frame - 1:
+                return
+            fps = self.collection_v.fps
+            if fps is None or fps <= 0:
+                return
+
+            self.start_time = time.perf_counter_ns()
+            self.start_frame_index = self.frame_slider.value()
+            self.actually_total_ms = 0
+
+            self.nano_play_thread.total_frames = total_frame
+            self.nano_play_thread.fps = fps
+            self.nano_play_thread.current_index = current_index
+
+            self.nano_play_thread.start_play()
+        except Exception as e:
+            print(f"Play Collection Failed: {e}")
+
+    def play_next_frame(self, index):
+        try:
+            next_index = int(self.frame_slider.value() + 1)
+            total_frame = len(self.collection_v.frames)
+            if not self.collection_v or total_frame <= next_index:
+                self.nano_play_thread.stop_play()
+                print(f"Total Frame: {total_frame}, Played Frames={total_frame - 1 - self.start_frame_index}, Start At: {self.start_frame_index + 1}")
+                theoretically_total_ms = (total_frame - self.start_frame_index - 1) / self.collection_v.fps * 1000
+                print(f"Theoretically Cost: {theoretically_total_ms} ms, Actually Cost={self.actually_total_ms:.2f} ms")
+                return
+
+            self.frame_slider.setValue(next_index)
+        except Exception as e:
+            print(f"Play Next Frame Failed: {e}")
