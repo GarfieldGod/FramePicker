@@ -1,18 +1,24 @@
 import enum
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton, QLineEdit
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton, QLineEdit, QLabel
 
 from ui.pages.custom_widget.viewer.functions.image_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
 
 class FunctionType(enum.Enum):
+    PLAY = "Play"
     CROP = "Crop"
     RESIZE = "Resize"
 
 class FunctionWidget(QWidget):
-    def __init__(self, frame_viewer, height=80, parent=None):
+    def __init__(self, frame_viewer, height=70, parent=None):
         super(FunctionWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.frame_viewer = frame_viewer
 
         self.function_widget = QWidget()
         self.setting_widget = QWidget()
@@ -21,6 +27,10 @@ class FunctionWidget(QWidget):
         self.setting_widget.hide()
         self.setting_layout = QHBoxLayout(self.setting_widget)
         self.function_layout = QHBoxLayout(self.function_widget)
+        # self.setting_layout.setSpacing(0)
+        self.setting_layout.setContentsMargins(0, 0, 0, 0)
+        self.function_layout.setSpacing(15)
+        self.function_layout.setContentsMargins(0, 0, 0, 0)
 
         self.current_func = None
         self.stack = QStackedWidget(self)
@@ -29,21 +39,26 @@ class FunctionWidget(QWidget):
 
         self.init_layout()
 
-        crop_setting = CropFunctionWidget(frame_viewer, self)
-        resize_setting = ResizeFunctionWidget(frame_viewer, self)
+    def init_func_widget(self):
+        play_setting = PlayFunctionWidget(self.frame_viewer, self)
+        crop_setting = CropFunctionWidget(self.frame_viewer, self)
+        resize_setting = ResizeFunctionWidget(self.frame_viewer, self)
 
         self.native_function = {
-            FunctionType.CROP : self.get_function(crop_setting),
+            FunctionType.PLAY: self.get_function(play_setting),
+            FunctionType.CROP: self.get_function(crop_setting),
             FunctionType.RESIZE: self.get_function(resize_setting),
             # FunctionType.CUT: (self.start_func, self.apply_func, self.cancel_func),
         }
 
         self.function_name = {
-            FunctionType.CROP : (0, "Crop"),
-            FunctionType.RESIZE: (1, "Resize")
+            FunctionType.PLAY: (0, "Play"),
+            FunctionType.CROP: (1, "Crop"),
+            FunctionType.RESIZE: (2, "Resize")
             # FunctionType.CUT : (1, "Cut")
         }
 
+        self.stack.addWidget(play_setting)
         self.stack.addWidget(crop_setting)
         self.stack.addWidget(resize_setting)
 
@@ -55,6 +70,7 @@ class FunctionWidget(QWidget):
 
         self.setting_layout.addStretch(2)
         self.setting_layout.addWidget(self.stack)
+        self.setting_layout.addStretch(1)
         self.setting_layout.addWidget(self.apply_func_button)
         self.setting_layout.addWidget(self.cancel_func_button)
 
@@ -81,15 +97,28 @@ class FunctionWidget(QWidget):
             self.function_buttons[key] = function_button
         self.function_layout.addStretch()
 
-    def start_func(self, func_type):
+    def start_func(self, func_type, show_apply=True, show_cancel=True):
         self.function_widget.hide()
         self.setting_widget.show()
+
+        if not show_apply:
+            self.apply_func_button.hide()
+        else:
+            self.apply_func_button.show()
+
+        if not show_cancel:
+            self.cancel_func_button.hide()
+        else:
+            self.cancel_func_button.show()
+
         self.current_func = func_type
         self.stack.setCurrentIndex(self.function_name[func_type][0])
 
     def cancel_func(self):
         self.function_widget.show()
         self.setting_widget.hide()
+        self.apply_func_button.show()
+        self.cancel_func_button.show()
         self.current_func = None
 
     def set_function_enabled(self, is_enabled, function_type=None):
@@ -173,6 +202,11 @@ class ResizeFunctionWidget(QWidget):
 
         self.height_input = QLineEdit()
         self.width_input = QLineEdit()
+        self.height_input.setFixedWidth(100)
+        self.width_input.setFixedWidth(100)
+        int_validator = QIntValidator()
+        self.height_input.setValidator(int_validator)
+        self.width_input.setValidator(int_validator)
 
         self.origin_size = None
 
@@ -180,11 +214,16 @@ class ResizeFunctionWidget(QWidget):
 
     def init_ui(self):
         layout = QHBoxLayout(self)
-
+        layout.addStretch()
+        layout.addWidget(QLabel("Width:"))
         layout.addWidget(self.width_input)
+        layout.addWidget(QLabel("Height:"))
         layout.addWidget(self.height_input)
+        layout.addStretch()
         self.width_input.textEdited.connect(self.update_resize)
         self.height_input.textEdited.connect(self.update_resize)
+        self.width_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.height_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def start_func(self):
         try:
@@ -242,3 +281,84 @@ class ResizeFunctionWidget(QWidget):
 
     def reset(self):
         self.cancel_func()
+
+class PlayFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(PlayFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        self.fps_input = QLineEdit()
+        self.play_button = QPushButton("Play")
+
+        self.is_playing = False
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+
+        layout.addStretch(1)
+        layout.addWidget(QLabel("FPS:"))
+        layout.addWidget(self.fps_input)
+        layout.addWidget(self.play_button)
+        layout.addStretch(1)
+
+        self.play_button.clicked.connect(self.play_collection)
+        self.frame_viewer.nano_play_thread.play_finished.connect(self.finished_play)
+
+        int_validator = QIntValidator()
+        self.fps_input.setValidator(int_validator)
+        self.fps_input.setFixedWidth(100)
+        self.fps_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+            fps = self.frame_viewer.collection_v.fps
+            if not fps: fps = 8
+            self.fps_input.setText(str(fps))
+            self.function_widget.start_func(FunctionType.PLAY, show_apply=False)
+        except Exception as e:
+            print(f"start resize failed: {e}")
+
+    def apply_func(self):
+        try:
+            pass
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            self.frame_viewer.stop_playing()
+            self.finished_play()
+
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel resize failed: {e}")
+
+    def reset(self):
+        self.cancel_func()
+
+    def play_collection(self):
+        try:
+            if self.is_playing:
+                self.frame_viewer.stop_playing()
+                self.finished_play()
+            else:
+                fps = float(self.fps_input.text())
+                if self.frame_viewer.play_collection(fps):
+                    self.fps_input.setEnabled(False)
+                    self.play_button.setText("Stop")
+                    self.is_playing = True
+        except Exception as e:
+            print(f"Function Widget Play Collection Failed: {e}")
+
+    def finished_play(self):
+        self.play_button.setText("Play")
+        self.is_playing = False
+        self.fps_input.setEnabled(True)

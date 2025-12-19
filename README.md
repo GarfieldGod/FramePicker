@@ -41,5 +41,5 @@ With FramePicker, you can **preview, select, crop, resize, and export** only the
 > - `[TODO]` Option Page → check for updates
 > - `[TODO]` Option Page → update to a developing preemptive version
 > - `[TODO]` → Interface beautification
-> - `[TODO]` → Play frames according to the set frame rate
+> - ~~`[TODO]` → Play frames according to the set frame rate~~
 > - `[TODO]` → Add test suites to test code

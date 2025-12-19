@@ -130,39 +130,41 @@ class FrameViewer(QWidget):
         self.collection_v = None
         self.update_viewer()
 
-    def play_collection(self):
+    def play_collection(self, fps: float):
+        if self.collection_v is None: return False
         try:
             total_frame = len(self.collection_v.frames)
+            self.collection_v.fps = float(fps)
             current_index = int(self.frame_slider.value())
-            if self.collection_v is None or total_frame <= 0 or current_index == total_frame - 1:
-                return
-            fps = self.collection_v.fps
-            if fps is None or fps <= 0:
-                return
+            if total_frame <= 0 or current_index == total_frame - 1 or fps is None or fps <= 0:
+                return False
 
             self.start_time = time.perf_counter_ns()
-            self.start_frame_index = self.frame_slider.value()
-            self.actually_total_ms = 0
+            self.start_frame_index = current_index
 
-            self.nano_play_thread.total_frames = total_frame
-            self.nano_play_thread.fps = fps
-            self.nano_play_thread.current_index = current_index
-
-            self.nano_play_thread.start_play()
+            self.nano_play_thread.start_play(total_frame, fps, current_index)
+            return True
         except Exception as e:
             print(f"Play Collection Failed: {e}")
+            return False
 
     def play_next_frame(self, index):
         try:
             next_index = int(self.frame_slider.value() + 1)
             total_frame = len(self.collection_v.frames)
             if not self.collection_v or total_frame <= next_index:
-                self.nano_play_thread.stop_play()
-                print(f"Total Frame: {total_frame}, Played Frames={total_frame - 1 - self.start_frame_index}, Start At: {self.start_frame_index + 1}")
-                theoretically_total_ms = (total_frame - self.start_frame_index - 1) / self.collection_v.fps * 1000
-                print(f"Theoretically Cost: {theoretically_total_ms} ms, Actually Cost={self.actually_total_ms:.2f} ms")
+                self.stop_playing()
                 return
 
             self.frame_slider.setValue(next_index)
         except Exception as e:
             print(f"Play Next Frame Failed: {e}")
+
+    def stop_playing(self):
+        if not hasattr(self, 'start_frame_index'): return
+        self.nano_play_thread.stop_play()
+        total_frame = len(self.collection_v.frames)
+        print(f"Total Frame: {total_frame}, Played Frames={total_frame - 1 - self.start_frame_index}, Start At: {self.start_frame_index + 1}")
+        theoretically_total_ms = (total_frame - self.start_frame_index - 1) / self.collection_v.fps * 1000
+        actually_total_ms = (time.perf_counter_ns() - self.start_time) / 1_000_000
+        print(f"Theoretically Cost: {theoretically_total_ms:.2f} ms, Actually Cost={actually_total_ms:.2f} ms")
