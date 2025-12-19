@@ -5,11 +5,14 @@ class CollectionType(Enum):
     CUSTOM = "Custom"
 
 class Collection:
-    def __init__(self, collection_name: str, frames_list: list, collection_type: CollectionType, collection_id: int):
+    def __init__(self, collection_name: str, frames_list: list,
+                 collection_type: CollectionType, collection_id: int,
+                 collection_fps: int):
         self.collection_name = collection_name
         self.collection_type = collection_type
         self.collection_id = collection_id
         self.frames = frames_list.copy()
+        self.fps = collection_fps
 
     def add_frame(self, frame) -> None:
         self.frames.append(frame)

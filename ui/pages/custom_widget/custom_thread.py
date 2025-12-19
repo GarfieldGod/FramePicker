@@ -1,3 +1,5 @@
+import time
+
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from src.frame_picker import FramePicker
@@ -68,3 +70,52 @@ class DecodeThread(QThread):
             final_ret = f"线程执行异常：{e}"
 
         self.decode_all_finished.emit(all_success, final_ret)
+
+
+class NanoPrecisionPlayThread(QThread):
+    next_frame_index = pyqtSignal(int)
+    play_finished = pyqtSignal()
+
+    def __init__(self, total_frames: int = None, fps: int = None, start_index = 0, parent=None):
+        super().__init__(parent)
+        self.total_frames = total_frames
+        self.fps = fps
+
+        self._is_playing = False
+        self.current_index = start_index
+        self.start_nano = 0
+
+    def start_play(self):
+        if self.total_frames == 0:
+            return
+        self._is_playing = True
+        self.current_index = 0
+        self.start_nano = time.perf_counter_ns()
+        self.start()
+
+    def stop_play(self):
+        self._is_playing = False
+        self.total_frames = None
+        self.fps = None
+        self.wait()
+
+    def run(self):
+        if not self.total_frames or not self.fps or self.fps == 0: return
+
+        while self._is_playing and self.current_index < self.total_frames:
+            target_nano = self.start_nano + self.current_index * (1_000_000_000 / self.fps)
+            current_nano = time.perf_counter_ns()
+
+            if current_nano < target_nano:
+                delta_nano = target_nano - current_nano
+                if delta_nano > 1_000_000:
+                    time.sleep((delta_nano - 500_000) / 1_000_000_000)
+                while time.perf_counter_ns() < target_nano and self._is_playing:
+                    pass
+
+            if self._is_playing:
+                self.next_frame_index.emit(self.current_index)
+                self.current_index += 1
+
+        self._is_playing = False
+        self.play_finished.emit()

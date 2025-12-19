@@ -39,8 +39,13 @@ class FrameCollector(QWidget):
         self.list_collections.setFocusPolicy(Qt.NoFocus)
 
         self.open_file_button.on_decode_success.connect(
-            lambda signal_dict:(
-                col := CollectionManager.create_collection("Decode Collection", signal_dict, CollectionType.DECODE),
+            lambda signal_dict, fps : (
+                col := CollectionManager.create_collection(
+                    collection_name="Decode Collection",
+                    frames_list=signal_dict,
+                    collection_type=CollectionType.DECODE,
+                    collection_fps=fps
+                ),
                 self.create_collection(col, auto_view=True)
             )
         )
