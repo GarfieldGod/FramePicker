@@ -5,8 +5,9 @@ from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBo
 
 from src.collection.collection import Collection, CollectionType
 from src.collection.collection_manager import CollectionManager
+from src.frame_picker import FramePicker
 from ui.pages.custom_widget.custom_thread import DownLoadThread
-from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox
+from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox, NewCollectionDialog
 from ui.pages.custom_widget.decode.file_open_button import FileOpenButton
 from ui.utils.ui_utils import UiUtils
 
@@ -28,11 +29,7 @@ class FrameCollector(QWidget):
         self.init_functions()
 
     def init_functions(self):
-        self.button_add_collection.clicked.connect(
-            lambda _: self.create_collection(
-                CollectionManager.create_collection()
-            )
-        )
+        self.button_add_collection.clicked.connect(self.create_collection_ui)
         self.button_delete_collection.clicked.connect(self.delete_collection)
 
         self.list_collections.itemClicked.connect(self.select_collection)
@@ -64,6 +61,35 @@ class FrameCollector(QWidget):
 
         layout_collector.addLayout(layout_buttons)
         layout_collector.addWidget(self.list_collections)
+
+    def create_collection_ui(self):
+        try:
+            dlg = NewCollectionDialog()
+            if dlg.exec_() == QDialog.Accepted:
+                ret_dict = dlg.values()
+                collection_name = ret_dict.get("collection_name", None)
+                create_type = ret_dict.get("create_type", "Empty")
+
+                if create_type == "Empty":
+                    collection = CollectionManager.create_collection(collection_name=collection_name)
+                    self.create_collection(collection)
+                elif create_type == "Inheritance":
+                    src_id = ret_dict.get("src_collection")
+                    inherit_type = ret_dict.get("inherit_type")
+                    inherit_input = ret_dict.get("inherit_input")
+                    if src_id is None or inherit_type is None or inherit_input is None: return
+                    if inherit_type == "Specify Num":
+                        src_col = CollectionManager.get_collection(src_id)
+                        if src_col is None: return
+                        frame_list = FramePicker.specify_num_frames(src_col.frames, inherit_input)
+                        collection = CollectionManager.create_collection(
+                            collection_name=collection_name,
+                            frames_list=frame_list
+                        )
+                        self.create_collection(collection)
+
+        except Exception as e:
+            print(f"Create collection ui failed: {e}")
 
     def create_collection(self, collection, auto_view=False):
         try:
