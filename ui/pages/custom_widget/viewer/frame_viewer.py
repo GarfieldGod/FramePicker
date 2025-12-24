@@ -130,10 +130,12 @@ class FrameViewer(QWidget):
         self.collection_v = None
         self.update_viewer()
 
-    def play_collection(self, fps: float):
+    def play_collection(self, fps: float, start_index: int):
         if self.collection_v is None: return False
         try:
             total_frame = len(self.collection_v.frames)
+            if 0 <= start_index < total_frame:
+                self.frame_slider.setValue(start_index)
             self.collection_v.fps = float(fps)
             current_index = int(self.frame_slider.value())
             if total_frame <= 0 or current_index == total_frame - 1 or fps is None or fps <= 0:

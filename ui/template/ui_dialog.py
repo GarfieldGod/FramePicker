@@ -4,7 +4,7 @@ import sys
 from PyQt5.QtCore import Qt, QRectF, QSize
 from PyQt5.QtGui import QBrush, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLineEdit, QComboBox, QApplication, QSpacerItem, \
-    QPushButton, QHBoxLayout, QSizePolicy
+    QPushButton, QHBoxLayout, QSizePolicy, QWidget
 
 from ui.template.element.ui_element_title import TitleBarArea
 from ui.template.ui_custom_color import CustomColor
@@ -27,11 +27,11 @@ class Dialog(QDialog):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.title_bar_height = title_height
-        self.content = None
 
         self.show_confirm = show_confirm_button
         self.show_cancel = show_cancel_button
         self.button_right = button_right
+        self.content = QWidget()
 
         self.title_bar = TitleBarArea(
             title_text=title_text,
@@ -69,8 +69,7 @@ class Dialog(QDialog):
         widget_layout.setSpacing(0)
         widget_layout.setContentsMargins(0,0,0,0)
         widget_layout.addWidget(self.title_bar)
-        if self.content is not None:
-            widget_layout.addWidget(self.content)
+        widget_layout.addWidget(self.content)
 
         button_layout = QHBoxLayout()
         if self.show_confirm and self.show_cancel and self.button_right:
@@ -83,7 +82,7 @@ class Dialog(QDialog):
         button_layout.addStretch(1)
 
         widget_layout.addLayout(button_layout)
-        widget_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
+        widget_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
     def values(self):
         pass

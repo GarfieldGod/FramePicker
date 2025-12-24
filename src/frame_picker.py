@@ -103,6 +103,34 @@ class FramePicker:
 
         return frame_index_list
 
+    @staticmethod
+    def specify_num_index(src_list, num_frames):
+        if num_frames < 1:
+            raise ValueError("帧数量必须 ≥ 1")
+
+        frame_count = len(src_list)
+
+        if num_frames > frame_count:
+            raise ValueError("指定帧数量超过片段总帧数")
+
+        skip_frame_count = frame_count // (num_frames - 1)
+
+        frame_index_list = []
+        current_frame = 0
+        while current_frame < frame_count:
+            frame_index_list.append(current_frame)
+            current_frame += skip_frame_count
+
+        return frame_index_list
+
+    @staticmethod
+    def specify_num_frames(src_list, num_frames) -> list:
+        list_index = FramePicker.specify_num_index(src_list, num_frames)
+        ret = []
+        for index in list_index:
+            ret.append(src_list[index])
+        return ret
+
     def crop(self, crop_area=None):
         self.crop_ = crop_area
 

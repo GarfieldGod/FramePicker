@@ -294,6 +294,7 @@ class PlayFunctionWidget(QWidget):
 
         self.fps_input = QLineEdit()
         self.play_button = QPushButton("Play")
+        self.play_from_start_button = QPushButton("Play from Start")
 
         self.is_playing = False
 
@@ -306,9 +307,11 @@ class PlayFunctionWidget(QWidget):
         layout.addWidget(QLabel("FPS:"))
         layout.addWidget(self.fps_input)
         layout.addWidget(self.play_button)
+        layout.addWidget(self.play_from_start_button)
         layout.addStretch(1)
 
-        self.play_button.clicked.connect(self.play_collection)
+        self.play_button.clicked.connect(lambda : self.play_collection(-1))
+        self.play_from_start_button.clicked.connect(lambda : self.play_collection(0))
         self.frame_viewer.nano_play_thread.play_finished.connect(self.finished_play)
 
         int_validator = QIntValidator()
@@ -324,7 +327,7 @@ class PlayFunctionWidget(QWidget):
             self.fps_input.setText(str(fps))
             self.function_widget.start_func(FunctionType.PLAY, show_apply=False)
         except Exception as e:
-            print(f"start resize failed: {e}")
+            print(f"Start play failed: {e}")
 
     def apply_func(self):
         try:
@@ -339,19 +342,19 @@ class PlayFunctionWidget(QWidget):
 
             self.function_widget.cancel_func()
         except Exception as e:
-            print(f"Cancel resize failed: {e}")
+            print(f"Cancel play failed: {e}")
 
     def reset(self):
         self.cancel_func()
 
-    def play_collection(self):
+    def play_collection(self, start_index):
         try:
             if self.is_playing:
                 self.frame_viewer.stop_playing()
                 self.finished_play()
             else:
                 fps = float(self.fps_input.text())
-                if self.frame_viewer.play_collection(fps):
+                if self.frame_viewer.play_collection(fps, start_index):
                     self.fps_input.setEnabled(False)
                     self.play_button.setText("Stop")
                     self.is_playing = True
