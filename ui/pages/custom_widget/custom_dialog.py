@@ -128,27 +128,30 @@ class NewCollectionDialog(Dialog):
             print(f"Create collection ui failed: {e}")
 
     def init_func(self):
-        self.create_type.addItems(self.create_types)
-        self.create_type.setCurrentIndex(0)
+        try:
+            self.create_type.addItems(self.create_types)
+            self.create_type.setCurrentIndex(0)
 
-        col_dict = CollectionManager.get_all_collections()
+            col_dict = CollectionManager.get_all_collections()
 
-        for col_id in col_dict:
-            col = col_dict[col_id]
-            col_len = len(col.frames)
-            if col_len <= 0:
-                continue
-            col_str = f"Name: [{col.collection_name}] Frame Count: [{str(col_len)}]"
-            self.src_collection.addItem(col_str, col_id)
+            for col_id in col_dict:
+                col = col_dict[col_id]
+                col_len = len(col.frames)
+                if col_len <= 0:
+                    continue
+                col_str = f"Name: [{col.collection_name}] Frame Count: [{str(col_len)}]"
+                self.src_collection.addItem(col_str, col_id)
 
-        self.src_collection_changed()
+            self.src_collection_changed()
 
-        self.inherit_type.addItems(self.inherit_types)
-        self.inherit_type.setCurrentIndex(0)
+            self.inherit_type.addItems(self.inherit_types)
+            self.inherit_type.setCurrentIndex(0)
 
-        self.create_type.currentIndexChanged.connect(self.create_type_changed)
-        self.src_collection.currentIndexChanged.connect(self.src_collection_changed)
-        self.inherit_input.textChanged.connect(self.inherit_input_changed)
+            self.create_type.currentIndexChanged.connect(self.create_type_changed)
+            self.src_collection.currentIndexChanged.connect(self.src_collection_changed)
+            self.inherit_input.textChanged.connect(self.inherit_input_changed)
+        except Exception as e:
+            print(f"Init create collection ui func failed: {e}")
 
     def src_collection_changed(self):
         try:
@@ -177,40 +180,50 @@ class NewCollectionDialog(Dialog):
             print(f"Inherit input ui failed: {e}")
 
     def create_type_changed(self):
-        self.stack.setCurrentIndex(self.create_type.currentIndex())
+        try:
+            self.stack.setCurrentIndex(self.create_type.currentIndex())
 
-        self.adjustSize()
+            self.adjustSize()
+        except Exception as e:
+            print(f"Create type change failed: {e}")
 
     def init_content_widget(self):
-        layout_content = QVBoxLayout(self.content)
+        try:
+            layout_content = QVBoxLayout(self.content)
 
-        layout_content.addWidget(QLabel("Collection Name:"))
-        layout_content.addWidget(self.collection_name)
-        layout_content.addWidget(QLabel("Create Type:"))
-        layout_content.addWidget(self.create_type)
+            layout_content.addWidget(QLabel("Collection Name:"))
+            layout_content.addWidget(self.collection_name)
+            layout_content.addWidget(QLabel("Create Type:"))
+            layout_content.addWidget(self.create_type)
 
-        layout_content.addWidget(self.stack)
-        self.stack.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+            layout_content.addWidget(self.stack)
+            self.stack.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
-        self.stack.addWidget(QWidget())
+            self.stack.addWidget(QWidget())
 
-        widget_inherit = QWidget()
-        layout_inherit = QVBoxLayout(widget_inherit)
-        widget_inherit.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        layout_inherit.addWidget(QLabel("Source Collection:"))
-        layout_inherit.addWidget(self.src_collection)
-        layout_inherit.addWidget(QLabel("Inherit Type:"))
-        layout_inherit.addWidget(self.inherit_type)
-        layout_inherit.addWidget(self.inherit_label)
-        layout_inherit.addWidget(self.inherit_input)
-        self.stack.addWidget(widget_inherit)
+            widget_inherit = QWidget()
+            layout_inherit = QVBoxLayout(widget_inherit)
+            widget_inherit.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            layout_inherit.addWidget(QLabel("Source Collection:"))
+            layout_inherit.addWidget(self.src_collection)
+            layout_inherit.addWidget(QLabel("Inherit Type:"))
+            layout_inherit.addWidget(self.inherit_type)
+            layout_inherit.addWidget(self.inherit_label)
+            layout_inherit.addWidget(self.inherit_input)
+            self.stack.addWidget(widget_inherit)
+        except Exception as e:
+            print(f"Init content widget failed: {e}")
 
     def values(self):
-        ret_dict = {
-            "collection_name" : self.collection_name.text(),
-            "create_type" : self.create_type.currentText(),
-            "src_collection" : self.src_collection.currentData(),
-            "inherit_type" : self.inherit_type.currentText(),
-            "inherit_input": int(self.inherit_input.text()),
-        }
-        return ret_dict
+        try:
+            inherit_input = int(self.inherit_input.text()) if self.inherit_input.text() != "" else 0
+            ret_dict = {
+                "collection_name" : self.collection_name.text(),
+                "create_type" : self.create_type.currentText(),
+                "src_collection" : self.src_collection.currentData(),
+                "inherit_type" : self.inherit_type.currentText(),
+                "inherit_input": inherit_input,
+            }
+            return ret_dict
+        except Exception as e:
+            print(f"Value func failed: {e}")

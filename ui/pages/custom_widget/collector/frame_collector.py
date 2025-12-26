@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QListWidget, QPushButton, QVBoxLayout, QHBoxLayout, QListWidgetItem, \
+from PyQt5.QtWidgets import QWidget, QListWidget, QVBoxLayout, QHBoxLayout, QListWidgetItem, \
     QLabel, QLineEdit, QDialog
 
 from src.collection.collection import Collection, CollectionType
@@ -9,6 +9,7 @@ from src.frame_picker import FramePicker
 from ui.pages.custom_widget.custom_thread import DownLoadThread
 from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox, NewCollectionDialog
 from ui.pages.custom_widget.decode.file_open_button import FileOpenButton
+from ui.template.widget.ui_custom_button import PushButton
 from ui.utils.ui_utils import UiUtils
 
 class FrameCollector(QWidget):
@@ -20,10 +21,11 @@ class FrameCollector(QWidget):
         super(FrameCollector, self).__init__()
 
         self.list_collections = QListWidget()
-        self.button_add_collection = QPushButton("+")
-        self.button_delete_collection = QPushButton("-")
-        self.open_file_button = FileOpenButton()
+
         self.button_size = QSize(30, 30)
+        self.button_add_collection = PushButton(image_path="new_collection", image_size=self.button_size)
+        self.button_delete_collection = PushButton(image_path="delete_collection", image_size=QSize(30, 25))
+        self.open_file_button = FileOpenButton(self.button_size)
 
         self.init_ui_layout()
         self.init_functions()
@@ -51,10 +53,10 @@ class FrameCollector(QWidget):
         layout_collector = QVBoxLayout(self)
 
         layout_buttons = QHBoxLayout()
+        layout_buttons.addWidget(self.open_file_button)
         layout_buttons.addWidget(self.button_add_collection)
         layout_buttons.addWidget(self.button_delete_collection)
         layout_buttons.addStretch()
-        layout_buttons.addWidget(self.open_file_button)
         self.button_add_collection.setFixedSize(self.button_size)
         self.button_delete_collection.setFixedSize(self.button_size)
         self.open_file_button.setFixedSize(self.button_size)
@@ -216,8 +218,8 @@ class CollectionWidget(QWidget):
         self.total_frames_label = QLabel()
         self.frame_size_label = QLabel()
 
-        self.view_collection_button =  QPushButton("Open in Viewer")
-        self.download_button = QPushButton("DownLoad")
+        self.view_collection_button =  PushButton("Open in Viewer")
+        self.download_button = PushButton("DownLoad")
 
         self.init_func()
         self.init_ui()
