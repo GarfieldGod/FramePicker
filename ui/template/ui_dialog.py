@@ -4,11 +4,12 @@ import sys
 from PyQt5.QtCore import Qt, QRectF, QSize
 from PyQt5.QtGui import QBrush, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLineEdit, QComboBox, QApplication, QSpacerItem, \
-    QPushButton, QHBoxLayout, QSizePolicy, QWidget
+    QHBoxLayout, QSizePolicy, QWidget
 
 from ui.template.element.ui_element_title import TitleBarArea
 from ui.template.ui_custom_color import CustomColor
 from ui.template.ui_custom_function import get_ui_resource_path
+from ui.template.widget.ui_custom_button import PushButton
 
 
 class Dialog(QDialog):
@@ -42,10 +43,10 @@ class Dialog(QDialog):
             show_close_button=False,
             window=self)
 
-        self.confirm_button = QPushButton("confirm")
+        self.confirm_button = PushButton("Confirm")
         self.confirm_button.setFixedSize(button_size)
         if not show_confirm_button: self.confirm_button.hide()
-        self.cancel_button = QPushButton("cancel")
+        self.cancel_button = PushButton("Cancel")
         self.cancel_button.setFixedSize(button_size)
         if not show_cancel_button: self.cancel_button.hide()
         self.confirm_button.clicked.connect(self.accept)

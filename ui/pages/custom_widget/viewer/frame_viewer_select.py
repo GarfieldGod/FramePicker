@@ -1,10 +1,11 @@
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout
+from PyQt5.QtWidgets import QHBoxLayout
 
 from src.collection.collection import CollectionType
 from src.collection.collection_manager import CollectionManager
 from ui.pages.custom_widget.viewer.functions.function_widget import FunctionWidget
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
+from ui.template.widget.ui_custom_button import PushButton
 
 
 class FrameViewerSelect(FrameViewer):
@@ -12,8 +13,8 @@ class FrameViewerSelect(FrameViewer):
     update_collection = pyqtSignal(int, int)
 
     def __init__(self, frame_label=None, parent=None):
-        self.button_add = QPushButton("Add to Selected Collection")
-        self.button_delete = QPushButton("Delete from Viewing Collection")
+        self.button_add = PushButton("Add to Selected Collection")
+        self.button_delete = PushButton("Delete from Viewing Collection")
 
         self.frame_label = frame_label
         self.function_widget = FunctionWidget(self)

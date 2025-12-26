@@ -1,24 +1,30 @@
+import os
+
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
-from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, pyqtProperty
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, pyqtProperty, QSize, Qt
+from PyQt5.QtGui import QColor, QIcon, QPixmap
 import sys
+
+from ui.template.ui_custom_function import get_ui_resource_path
 
 class PushButton(QPushButton):
     def __init__(self, text="",
+                 image_path=None,
+                 image_size=None,
                  color_default=QColor("#FFFFFF"),
                  border_default=1,
                  radius_default=5,
                  font_size_default=14,
                  border_color_default=QColor("#9C9C9C"),
                  font_color_default=QColor("#000000"),
-                 duration=300,
+                 duration=150,
                  color_hover=QColor("#DEEDFE"),
                  border_hover=None,
                  radius_hover=None,
                  font_size_hover=None,
                  border_color_hover=QColor("#5BA1F4"),
                  font_color_hover=None,
-                 padding="10px 20px",
+                 padding="0px 0px",
                  parent=None):
         super().__init__(text, parent)
         self._color = color_default
@@ -57,6 +63,21 @@ class PushButton(QPushButton):
             self.animations.append(animation)
 
         self._update_style()
+
+        self.setContentsMargins(0,0,0,0)
+
+        if image_path:
+            img_path = os.path.join(get_ui_resource_path(), "image", image_path)
+            pixmap = QPixmap(img_path)
+            scaled_pixmap = pixmap.scaled(
+                image_size,
+                Qt.IgnoreAspectRatio,
+                Qt.SmoothTransformation
+            )
+            self.setIcon(QIcon(scaled_pixmap))
+            # self.setIcon(QIcon(img_path))
+            if image_size is not None:
+                self.setIconSize(image_size)
 
     def _update_style(self):
         self.setStyleSheet(f"""

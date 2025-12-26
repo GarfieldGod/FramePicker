@@ -1,11 +1,13 @@
 import enum
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton, QLineEdit, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QLineEdit, QLabel
 
 from ui.pages.custom_widget.viewer.functions.image_widget import CropLabel
 from ui.pages.custom_widget.viewer.frame_viewer import FrameViewer
+from ui.template.widget.ui_custom_button import PushButton
+
 
 class FunctionType(enum.Enum):
     PLAY = "Play"
@@ -34,8 +36,8 @@ class FunctionWidget(QWidget):
 
         self.current_func = None
         self.stack = QStackedWidget(self)
-        self.apply_func_button = QPushButton("√")
-        self.cancel_func_button = QPushButton("×")
+        self.apply_func_button = PushButton("√")
+        self.cancel_func_button = PushButton("×")
 
         self.init_layout()
 
@@ -52,9 +54,9 @@ class FunctionWidget(QWidget):
         }
 
         self.function_name = {
-            FunctionType.PLAY: (0, "Play"),
-            FunctionType.CROP: (1, "Crop"),
-            FunctionType.RESIZE: (2, "Resize")
+            FunctionType.PLAY: (0, "Play", "func_play"),
+            FunctionType.CROP: (1, "Crop", "func_crop"),
+            FunctionType.RESIZE: (2, "Resize", "func_resize"),
             # FunctionType.CUT : (1, "Cut")
         }
 
@@ -89,9 +91,10 @@ class FunctionWidget(QWidget):
     def init_func(self):
         self.function_buttons = {}
         self.function_layout.addStretch()
+        button_size = QSize(30, 30)
         for key, value in self.native_function.items():
-            function_button = QPushButton(str(self.function_name[key][1]))
-            function_button.setFixedSize(50, 30)
+            function_button = PushButton(image_path=self.function_name[key][2], border_default=1, image_size=button_size)
+            function_button.setFixedSize(button_size)
             function_button.clicked.connect(value[0])
             self.function_layout.addWidget(function_button)
             self.function_buttons[key] = function_button
@@ -162,7 +165,7 @@ class CropFunctionWidget(QWidget):
         layout = QHBoxLayout(self)
 
         for key, value in self.ratio_map.items():
-            button = QPushButton(str(key))
+            button = PushButton(str(key))
             button.setFixedSize(50, 30)
             button.clicked.connect(lambda _, v=value: self.frame_viewer.frame_label.set_ratio(v))
             layout.addWidget(button)
@@ -293,8 +296,8 @@ class PlayFunctionWidget(QWidget):
         self.function_widget = function_widget
 
         self.fps_input = QLineEdit()
-        self.play_button = QPushButton("Play")
-        self.play_from_start_button = QPushButton("Play from Start")
+        self.play_button = PushButton("Play")
+        self.play_from_start_button = PushButton("Play from Start")
 
         self.is_playing = False
 

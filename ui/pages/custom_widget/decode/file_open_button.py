@@ -1,22 +1,22 @@
 import os
 from pathlib import Path
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QPushButton, QFileDialog
+from PyQt5.QtCore import pyqtSignal, Qt, QSize
+from PyQt5.QtWidgets import QFileDialog
 
 from src.frame_picker import FramePicker
 from ui.pages.custom_widget.custom_thread import DecodeThread
 from ui.pages.custom_widget.custom_dialog import ProgressDialog
+from ui.template.widget.ui_custom_button import PushButton
 
-class FileOpenButton(QPushButton):
+class FileOpenButton(PushButton):
     frame_picker = None
     on_decode_failed = pyqtSignal(str)
     on_decode_success = pyqtSignal(list, float)
 
-    def __init__(self, text="File", parent=None):
-        super(FileOpenButton, self).__init__(parent)
+    def __init__(self, size=None, parent=None):
+        super(FileOpenButton, self).__init__(image_path="open_file",image_size=size, parent=parent)
 
-        self.setText(text)
         self.clicked.connect(self.open_file_dialog)
 
     def open_file_dialog(self):
