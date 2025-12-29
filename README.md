@@ -27,16 +27,28 @@ With FramePicker, you can **preview, select, crop, resize, and export** only the
 
 ## Update
 
+> - #### Version 1.0.1 (2025.12.29)
+> - `[NEW FEATURE]` `Play` a collection with target fps
+> - `[NEW FEATURE]` Support creating a new collection by inheriting a source collection
+> - `[NEW FEATURE]` Update ui icon
+> - #### Todo
+> - `[TODO]` Export the Collection as a single large image
+> - `[TODO]` Support flipping the frames in the Collection
+> - `[TODO]` Crop the length of the Collection based on the start and end frames
+> - `[TODO]` Import a Collection from an image folder
+> - `[TODO]` Export the Collection as a video
+> - `[TODO]` Support loop playback of the Collection
+
 > - #### Version 1.0.0 (2025.12.19)
-> - `[NEW FEATURE]` supported decode video as single frames
-> - `[NEW FEATURE]` supported select frames to a new collection
-> - `[NEW FEATURE]` supported download collection as png or jpeg images
-> - `[NEW FEATURE]` supported crop all the frames in collection
-> - `[NEW FEATURE]` supported resize all the frames in collection
+> - `[NEW FEATURE]` `Decode` video as single frames
+> - `[NEW FEATURE]` `Select` frames to a new collection
+> - `[NEW FEATURE]` `Crop` all the frames in collection
+> - `[NEW FEATURE]` `Resize` all the frames in collection
+> - `[NEW FEATURE]` `Download` a collection as png or jpeg images
 > - #### Todo
 > - `[TODO]` Collection list width exception → fixed width
 > - `[TODO]` The memory usage is too large and will increase dramatically based on frame copying → The collection only saving frame index
-> - `[TODO]` Option Page → Editable decoding frames, 
+> - `[TODO]` Option Page → editable decoding frames
 > - `[TODO]` Option Page → switchable memory performance modes
 > - `[TODO]` Option Page → check for updates
 > - `[TODO]` Option Page → update to a developing preemptive version
