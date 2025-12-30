@@ -79,6 +79,19 @@ class FrameViewerSelect(FrameViewer):
         except Exception as e:
             print(e)
 
+    def apply_flip_func(self):
+        try:
+            if self.frame_label.flip_type is None: return
+            for index, frame in enumerate(self.collection_v.frames):
+                self.collection_v.frames[index] = self.frame_label.flip_image(frame)
+
+            self.frame_label.flip_type = None
+
+            self.update_collection_list()
+            self.update_viewer(self.frame_slider.value())
+        except Exception as e:
+            print(e)
+
     def select_collection(self, collection_id):
         try:
             collection = CollectionManager.get_collection(collection_id)

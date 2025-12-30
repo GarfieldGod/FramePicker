@@ -13,6 +13,7 @@ class FunctionType(enum.Enum):
     PLAY = "Play"
     CROP = "Crop"
     RESIZE = "Resize"
+    FLIP = "Flip"
 
 class FunctionWidget(QWidget):
     def __init__(self, frame_viewer, height=70, parent=None):
@@ -45,11 +46,13 @@ class FunctionWidget(QWidget):
         play_setting = PlayFunctionWidget(self.frame_viewer, self)
         crop_setting = CropFunctionWidget(self.frame_viewer, self)
         resize_setting = ResizeFunctionWidget(self.frame_viewer, self)
+        flip_setting = FlipFunctionWidget(self.frame_viewer, self)
 
         self.native_function = {
             FunctionType.PLAY: self.get_function(play_setting),
             FunctionType.CROP: self.get_function(crop_setting),
             FunctionType.RESIZE: self.get_function(resize_setting),
+            FunctionType.FLIP: self.get_function(flip_setting)
             # FunctionType.CUT: (self.start_func, self.apply_func, self.cancel_func),
         }
 
@@ -57,12 +60,14 @@ class FunctionWidget(QWidget):
             FunctionType.PLAY: (0, "Play", "func_play"),
             FunctionType.CROP: (1, "Crop", "func_crop"),
             FunctionType.RESIZE: (2, "Resize", "func_resize"),
+            FunctionType.FLIP: (3, "Flip", "func_flip")
             # FunctionType.CUT : (1, "Cut")
         }
 
         self.stack.addWidget(play_setting)
         self.stack.addWidget(crop_setting)
         self.stack.addWidget(resize_setting)
+        self.stack.addWidget(flip_setting)
 
         self.init_func()
 
@@ -412,3 +417,64 @@ class PlayFunctionWidget(QWidget):
             button.reset()
         self.play_mode = self.PlayMode.Stop
         self.fps_input.setEnabled(True)
+
+class FlipFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(FlipFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        button_size = QSize(40, 40)
+        image_size = QSize(30, 30)
+        self.v_flip_button = PushButton(image_path="func_flip", image_size=image_size, image_rotate=90)
+        self.h_flip_button = PushButton(image_path="func_flip", image_size=image_size)
+        self.v_flip_button.setFixedSize(button_size)
+        self.h_flip_button.setFixedSize(button_size)
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+        layout.addStretch()
+        layout.addWidget(self.v_flip_button)
+        layout.addWidget(self.h_flip_button)
+        layout.addStretch()
+
+        self.v_flip_button.clicked.connect(lambda :self.flip(0))
+        self.h_flip_button.clicked.connect(lambda: self.flip(1))
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+
+            self.function_widget.start_func(FunctionType.FLIP)
+        except Exception as e:
+            print(f"start flip failed: {e}")
+
+    def flip(self, flip_type):
+        try:
+            self.frame_viewer.frame_label.set_flip(flip_type)
+            self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
+        except Exception as e:
+            print(f"update flip failed: {e}")
+
+    def apply_func(self):
+        try:
+            self.frame_viewer.apply_flip_func()
+            self.cancel_func()
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            self.flip(None)
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel flip failed: {e}")
+
+    def reset(self):
+        self.cancel_func()
