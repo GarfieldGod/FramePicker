@@ -30,6 +30,7 @@ With FramePicker, you can **preview, select, crop, resize, and export** only the
 > - #### Version 1.0.2 (2026.xx.xx)
 > - `[NEW FEATURE]` Support loop playback of the Collection
 > - `[NEW FEATURE]` Support flipping the frames in the Collection
+> - `[NEW FEATURE]` Export the Collection as a single large image
 > - `[BUG FIXED]` Respect input frame index in frame viewer
 > - #### Todo
 
@@ -38,7 +39,7 @@ With FramePicker, you can **preview, select, crop, resize, and export** only the
 > - `[NEW FEATURE]` Support creating a new collection by inheriting a source collection
 > - `[NEW FEATURE]` Update ui icon
 > - #### Todo
-> - `[TODO]` Export the Collection as a single large image
+> - ~~`[TODO]` Export the Collection as a single large image~~
 > - ~~`[TODO]` Support flipping the frames in the Collection~~
 > - `[TODO]` Crop the length of the Collection based on the start and end frames
 > - `[TODO]` Import a Collection from an image folder
