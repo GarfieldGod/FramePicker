@@ -14,6 +14,7 @@ class FunctionType(enum.Enum):
     CROP = "Crop"
     RESIZE = "Resize"
     FLIP = "Flip"
+    CUT = "Cut"
 
 class FunctionWidget(QWidget):
     def __init__(self, frame_viewer, height=70, parent=None):
@@ -47,12 +48,14 @@ class FunctionWidget(QWidget):
         crop_setting = CropFunctionWidget(self.frame_viewer, self)
         resize_setting = ResizeFunctionWidget(self.frame_viewer, self)
         flip_setting = FlipFunctionWidget(self.frame_viewer, self)
+        cut_setting = CutFunctionWidget(self.frame_viewer, self)
 
         self.native_function = {
             FunctionType.PLAY: self.get_function(play_setting),
             FunctionType.CROP: self.get_function(crop_setting),
             FunctionType.RESIZE: self.get_function(resize_setting),
-            FunctionType.FLIP: self.get_function(flip_setting)
+            FunctionType.FLIP: self.get_function(flip_setting),
+            FunctionType.CUT: self.get_function(cut_setting)
             # FunctionType.CUT: (self.start_func, self.apply_func, self.cancel_func),
         }
 
@@ -60,7 +63,8 @@ class FunctionWidget(QWidget):
             FunctionType.PLAY: (0, "Play", "func_play"),
             FunctionType.CROP: (1, "Crop", "func_crop"),
             FunctionType.RESIZE: (2, "Resize", "func_resize"),
-            FunctionType.FLIP: (3, "Flip", "func_flip")
+            FunctionType.FLIP: (3, "Flip", "func_flip"),
+            FunctionType.CUT: (4, "Cut", "func_cut")
             # FunctionType.CUT : (1, "Cut")
         }
 
@@ -68,6 +72,7 @@ class FunctionWidget(QWidget):
         self.stack.addWidget(crop_setting)
         self.stack.addWidget(resize_setting)
         self.stack.addWidget(flip_setting)
+        self.stack.addWidget(cut_setting)
 
         self.init_func()
 
@@ -478,3 +483,98 @@ class FlipFunctionWidget(QWidget):
 
     def reset(self):
         self.cancel_func()
+
+class CutFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(CutFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        self.start_frame = QLineEdit(str(1))
+        self.end_frame = QLineEdit()
+        self.notice_label = QLabel()
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+        space_label = QLabel()
+        layout.addWidget(space_label)
+        layout.addStretch()
+        layout.addWidget(QLabel("Start: "))
+        layout.addWidget(self.start_frame)
+        layout.addStretch()
+        layout.addWidget(QLabel("End: "))
+        layout.addWidget(self.end_frame)
+        layout.addStretch()
+        layout.addWidget(self.notice_label)
+
+        int_validator = QIntValidator()
+        self.start_frame.setValidator(int_validator)
+        self.end_frame.setValidator(int_validator)
+        self.start_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.end_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.notice_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        width = 100
+
+        self.start_frame.setFixedWidth(width)
+        self.end_frame.setFixedWidth(width)
+        self.notice_label.setFixedWidth(int(width/2))
+        space_label.setFixedWidth(int(width/2))
+
+        # self.notice_label.setStyleSheet("border: 1px solid black; border-radius: 5px;")
+
+        self.start_frame.textChanged.connect(self.on_text_changed)
+        self.end_frame.textChanged.connect(self.on_text_changed)
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+            self.end_frame.setText(str(len(self.frame_viewer.collection_v.frames)))
+            self.function_widget.start_func(FunctionType.CUT)
+        except Exception as e:
+            print(f"start flip failed: {e}")
+
+    def apply_func(self):
+        try:
+            start_frame = int(self.start_frame.text()) - 1
+            end_frame = int(self.end_frame.text())
+            if self.notice_label.text() == "Invalid":
+                return
+            self.frame_viewer.apply_cut_func(start_frame, end_frame)
+            self.cancel_func()
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel flip failed: {e}")
+
+    def reset(self):
+        self.cancel_func()
+
+    def on_text_changed(self):
+        try:
+            if not self.start_frame.text() or not self.end_frame.text():
+                self.notice_label.setText("Invalid")
+                self.notice_label.setStyleSheet("color: red")
+                return
+
+            start_frame = int(self.start_frame.text()) - 1
+            end_frame = int(self.end_frame.text()) - 1
+            if start_frame >= end_frame or 0 > start_frame or len(self.frame_viewer.collection_v.frames) <= end_frame:
+                self.notice_label.setText("Invalid")
+                self.notice_label.setStyleSheet("color: red")
+            else:
+                self.notice_label.setText("Valid")
+                self.notice_label.setStyleSheet("color: green")
+        except Exception as e:
+            print(f"on_text_changed failed: {e}")
+
+

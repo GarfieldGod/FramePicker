@@ -92,6 +92,14 @@ class FrameViewerSelect(FrameViewer):
         except Exception as e:
             print(e)
 
+    def apply_cut_func(self, start, end):
+        try:
+            self.collection_v.frames = self.collection_v.frames[start:end]
+            self.update_collection_list()
+            self.view_collection(self.collection_v.collection_id, 0)
+        except Exception as e:
+            print(e)
+
     def select_collection(self, collection_id):
         try:
             collection = CollectionManager.get_collection(collection_id)
