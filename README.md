@@ -34,6 +34,7 @@ With FramePicker, you can **preview, select, crop, resize, and export** only the
 > - `[NEW FEATURE]` Cut the length of the Collection based on the start and end frames
 > - `[BUG FIXED]` Respect input frame index in frame viewer
 > - #### Todo
+> - `[TODO]` Import a frame from an image
 
 > - #### Version 1.0.1 (2025.12.29)
 > - `[NEW FEATURE]` `Play` a collection with target fps

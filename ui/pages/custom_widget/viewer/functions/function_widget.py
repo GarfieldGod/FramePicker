@@ -496,7 +496,8 @@ class CutFunctionWidget(QWidget):
 
         self.start_frame = QLineEdit(str(1))
         self.end_frame = QLineEdit()
-        self.notice_label = QLabel()
+        self.notice_label = QLabel("●")
+        self.valid = True
 
         self.init_ui()
 
@@ -518,7 +519,7 @@ class CutFunctionWidget(QWidget):
         self.end_frame.setValidator(int_validator)
         self.start_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.end_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.notice_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.notice_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         width = 100
 
         self.start_frame.setFixedWidth(width)
@@ -543,7 +544,7 @@ class CutFunctionWidget(QWidget):
         try:
             start_frame = int(self.start_frame.text()) - 1
             end_frame = int(self.end_frame.text())
-            if self.notice_label.text() == "Invalid":
+            if not self.valid:
                 return
             self.frame_viewer.apply_cut_func(start_frame, end_frame)
             self.cancel_func()
@@ -562,17 +563,17 @@ class CutFunctionWidget(QWidget):
     def on_text_changed(self):
         try:
             if not self.start_frame.text() or not self.end_frame.text():
-                self.notice_label.setText("Invalid")
+                self.notice_label.setText("● NO")
                 self.notice_label.setStyleSheet("color: red")
                 return
 
             start_frame = int(self.start_frame.text()) - 1
             end_frame = int(self.end_frame.text()) - 1
             if start_frame >= end_frame or 0 > start_frame or len(self.frame_viewer.collection_v.frames) <= end_frame:
-                self.notice_label.setText("Invalid")
+                self.notice_label.setText("● NO")
                 self.notice_label.setStyleSheet("color: red")
             else:
-                self.notice_label.setText("Valid")
+                self.notice_label.setText("● OK")
                 self.notice_label.setStyleSheet("color: green")
         except Exception as e:
             print(f"on_text_changed failed: {e}")
