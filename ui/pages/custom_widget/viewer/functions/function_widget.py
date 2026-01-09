@@ -13,6 +13,8 @@ class FunctionType(enum.Enum):
     PLAY = "Play"
     CROP = "Crop"
     RESIZE = "Resize"
+    FLIP = "Flip"
+    CUT = "Cut"
 
 class FunctionWidget(QWidget):
     def __init__(self, frame_viewer, height=70, parent=None):
@@ -45,11 +47,15 @@ class FunctionWidget(QWidget):
         play_setting = PlayFunctionWidget(self.frame_viewer, self)
         crop_setting = CropFunctionWidget(self.frame_viewer, self)
         resize_setting = ResizeFunctionWidget(self.frame_viewer, self)
+        flip_setting = FlipFunctionWidget(self.frame_viewer, self)
+        cut_setting = CutFunctionWidget(self.frame_viewer, self)
 
         self.native_function = {
             FunctionType.PLAY: self.get_function(play_setting),
             FunctionType.CROP: self.get_function(crop_setting),
             FunctionType.RESIZE: self.get_function(resize_setting),
+            FunctionType.FLIP: self.get_function(flip_setting),
+            FunctionType.CUT: self.get_function(cut_setting)
             # FunctionType.CUT: (self.start_func, self.apply_func, self.cancel_func),
         }
 
@@ -57,12 +63,16 @@ class FunctionWidget(QWidget):
             FunctionType.PLAY: (0, "Play", "func_play"),
             FunctionType.CROP: (1, "Crop", "func_crop"),
             FunctionType.RESIZE: (2, "Resize", "func_resize"),
+            FunctionType.FLIP: (3, "Flip", "func_flip"),
+            FunctionType.CUT: (4, "Cut", "func_cut")
             # FunctionType.CUT : (1, "Cut")
         }
 
         self.stack.addWidget(play_setting)
         self.stack.addWidget(crop_setting)
         self.stack.addWidget(resize_setting)
+        self.stack.addWidget(flip_setting)
+        self.stack.addWidget(cut_setting)
 
         self.init_func()
 
@@ -82,7 +92,11 @@ class FunctionWidget(QWidget):
         self.cancel_func_button.clicked.connect(lambda : self.run_function(2))
 
     def get_function(self, widget):
-        return widget.start_func, widget.apply_func, widget.cancel_func
+        try:
+            return widget.start_func, widget.apply_func, widget.cancel_func
+        except Exception as e:
+            print(f"get function failed: {e}")
+            return None
 
     def run_function(self, index):
         if self.current_func is None: return
@@ -118,11 +132,14 @@ class FunctionWidget(QWidget):
         self.stack.setCurrentIndex(self.function_name[func_type][0])
 
     def cancel_func(self):
-        self.function_widget.show()
-        self.setting_widget.hide()
-        self.apply_func_button.show()
-        self.cancel_func_button.show()
-        self.current_func = None
+        try:
+            self.function_widget.show()
+            self.setting_widget.hide()
+            self.apply_func_button.show()
+            self.cancel_func_button.show()
+            self.current_func = None
+        except Exception as e:
+            print(f"Cancel func failed: {e}")
 
     def set_function_enabled(self, is_enabled, function_type=None):
         if function_type is None:
@@ -286,6 +303,20 @@ class ResizeFunctionWidget(QWidget):
         self.cancel_func()
 
 class PlayFunctionWidget(QWidget):
+    class PlayMode(enum.Enum):
+        Stop = "Stop"
+        PlayFromNow = "PlayFromNow"
+        PlayFromStart = "PlayFromStart"
+        PlayLoop = "PlayLoop"
+
+    class PlayButton(PushButton):
+        def __init__(self, text, parent=None):
+            super().__init__(text, parent=parent)
+            self.init_text = text
+
+        def reset(self):
+            self.setText(self.init_text)
+
     def __init__(self, frame_viewer, function_widget, parent=None):
         if not isinstance(frame_viewer, FrameViewer):
             raise TypeError('frame_viewer must be a FrameViewer')
@@ -296,10 +327,13 @@ class PlayFunctionWidget(QWidget):
         self.function_widget = function_widget
 
         self.fps_input = QLineEdit()
-        self.play_button = PushButton("Play")
-        self.play_from_start_button = PushButton("Play from Start")
 
-        self.is_playing = False
+        self.play_mode = self.PlayMode.Stop
+        self.button_list = {
+            self.PlayMode.PlayFromNow: self.PlayButton("Play"),
+            self.PlayMode.PlayFromStart: self.PlayButton("Now"),
+            self.PlayMode.PlayLoop: self.PlayButton("Loop")
+        }
 
         self.init_ui()
 
@@ -309,12 +343,13 @@ class PlayFunctionWidget(QWidget):
         layout.addStretch(1)
         layout.addWidget(QLabel("FPS:"))
         layout.addWidget(self.fps_input)
-        layout.addWidget(self.play_button)
-        layout.addWidget(self.play_from_start_button)
+        for mode, button in self.button_list.items():
+            layout.addWidget(button)
+            button.clicked.connect(
+                lambda _, m=mode: self.play_collection(play_mode=m)
+            )
         layout.addStretch(1)
 
-        self.play_button.clicked.connect(lambda : self.play_collection(-1))
-        self.play_from_start_button.clicked.connect(lambda : self.play_collection(0))
         self.frame_viewer.nano_play_thread.play_finished.connect(self.finished_play)
 
         int_validator = QIntValidator()
@@ -350,21 +385,197 @@ class PlayFunctionWidget(QWidget):
     def reset(self):
         self.cancel_func()
 
-    def play_collection(self, start_index):
+    def play_collection(self, play_mode):
         try:
-            if self.is_playing:
+
+            if self.play_mode != play_mode:
+                self.play_mode = play_mode
+
+                if play_mode == self.PlayMode.PlayFromNow:
+                    start_index = -1
+                    is_loop = False
+                elif play_mode == self.PlayMode.PlayFromStart:
+                    start_index = 0
+                    is_loop = False
+                elif play_mode == self.PlayMode.PlayLoop:
+                    start_index = 0
+                    is_loop = True
+                else:
+                    return
+
+                button = self.button_list.get(play_mode)
+                if not button: return
+
+                fps = float(self.fps_input.text())
+                if self.frame_viewer.play_collection(fps, start_index, is_loop):
+                    self.fps_input.setEnabled(False)
+                    button.setText("Stop")
+            else:
                 self.frame_viewer.stop_playing()
                 self.finished_play()
-            else:
-                fps = float(self.fps_input.text())
-                if self.frame_viewer.play_collection(fps, start_index):
-                    self.fps_input.setEnabled(False)
-                    self.play_button.setText("Stop")
-                    self.is_playing = True
         except Exception as e:
             print(f"Function Widget Play Collection Failed: {e}")
 
     def finished_play(self):
-        self.play_button.setText("Play")
-        self.is_playing = False
+        button = self.button_list.get(self.play_mode)
+        if button:
+            button.reset()
+        self.play_mode = self.PlayMode.Stop
         self.fps_input.setEnabled(True)
+
+class FlipFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(FlipFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        button_size = QSize(40, 40)
+        image_size = QSize(30, 30)
+        self.v_flip_button = PushButton(image_path="func_flip", image_size=image_size, image_rotate=90)
+        self.h_flip_button = PushButton(image_path="func_flip", image_size=image_size)
+        self.v_flip_button.setFixedSize(button_size)
+        self.h_flip_button.setFixedSize(button_size)
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+        layout.addStretch()
+        layout.addWidget(self.v_flip_button)
+        layout.addWidget(self.h_flip_button)
+        layout.addStretch()
+
+        self.v_flip_button.clicked.connect(lambda :self.flip(0))
+        self.h_flip_button.clicked.connect(lambda: self.flip(1))
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+
+            self.function_widget.start_func(FunctionType.FLIP)
+        except Exception as e:
+            print(f"start flip failed: {e}")
+
+    def flip(self, flip_type):
+        try:
+            self.frame_viewer.frame_label.set_flip(flip_type)
+            self.frame_viewer.update_viewer(self.frame_viewer.frame_slider.value())
+        except Exception as e:
+            print(f"update flip failed: {e}")
+
+    def apply_func(self):
+        try:
+            self.frame_viewer.apply_flip_func()
+            self.cancel_func()
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            self.flip(None)
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel flip failed: {e}")
+
+    def reset(self):
+        self.cancel_func()
+
+class CutFunctionWidget(QWidget):
+    def __init__(self, frame_viewer, function_widget, parent=None):
+        if not isinstance(frame_viewer, FrameViewer):
+            raise TypeError('frame_viewer must be a FrameViewer')
+        if not isinstance(frame_viewer.frame_label, CropLabel):
+            raise TypeError('frame_label must be a CropLabel')
+        super(CutFunctionWidget, self).__init__(parent)
+        self.frame_viewer = frame_viewer
+        self.function_widget = function_widget
+
+        self.start_frame = QLineEdit(str(1))
+        self.end_frame = QLineEdit()
+        self.notice_label = QLabel("●")
+        self.valid = True
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout(self)
+        space_label = QLabel()
+        layout.addWidget(space_label)
+        layout.addStretch()
+        layout.addWidget(QLabel("Start: "))
+        layout.addWidget(self.start_frame)
+        layout.addStretch()
+        layout.addWidget(QLabel("End: "))
+        layout.addWidget(self.end_frame)
+        layout.addStretch()
+        layout.addWidget(self.notice_label)
+
+        int_validator = QIntValidator()
+        self.start_frame.setValidator(int_validator)
+        self.end_frame.setValidator(int_validator)
+        self.start_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.end_frame.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.notice_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        width = 100
+
+        self.start_frame.setFixedWidth(width)
+        self.end_frame.setFixedWidth(width)
+        self.notice_label.setFixedWidth(int(width/2))
+        space_label.setFixedWidth(int(width/2))
+
+        # self.notice_label.setStyleSheet("border: 1px solid black; border-radius: 5px;")
+
+        self.start_frame.textChanged.connect(self.on_text_changed)
+        self.end_frame.textChanged.connect(self.on_text_changed)
+
+    def start_func(self):
+        try:
+            if not self.frame_viewer.collection_v: return
+            self.end_frame.setText(str(len(self.frame_viewer.collection_v.frames)))
+            self.function_widget.start_func(FunctionType.CUT)
+        except Exception as e:
+            print(f"start flip failed: {e}")
+
+    def apply_func(self):
+        try:
+            start_frame = int(self.start_frame.text()) - 1
+            end_frame = int(self.end_frame.text())
+            if not self.valid:
+                return
+            self.frame_viewer.apply_cut_func(start_frame, end_frame)
+            self.cancel_func()
+        except Exception as e:
+            print(f"Apply functions func error: {e}")
+
+    def cancel_func(self):
+        try:
+            self.function_widget.cancel_func()
+        except Exception as e:
+            print(f"Cancel flip failed: {e}")
+
+    def reset(self):
+        self.cancel_func()
+
+    def on_text_changed(self):
+        try:
+            if not self.start_frame.text() or not self.end_frame.text():
+                self.notice_label.setText("● NO")
+                self.notice_label.setStyleSheet("color: red")
+                return
+
+            start_frame = int(self.start_frame.text()) - 1
+            end_frame = int(self.end_frame.text()) - 1
+            if start_frame >= end_frame or 0 > start_frame or len(self.frame_viewer.collection_v.frames) <= end_frame:
+                self.notice_label.setText("● NO")
+                self.notice_label.setStyleSheet("color: red")
+            else:
+                self.notice_label.setText("● OK")
+                self.notice_label.setStyleSheet("color: green")
+        except Exception as e:
+            print(f"on_text_changed failed: {e}")
+
+

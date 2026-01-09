@@ -2,7 +2,7 @@ import os
 
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, pyqtProperty, QSize, Qt
-from PyQt5.QtGui import QColor, QIcon, QPixmap
+from PyQt5.QtGui import QColor, QIcon, QPixmap, QTransform
 import sys
 
 from ui.template.ui_custom_function import get_ui_resource_path
@@ -11,6 +11,7 @@ class PushButton(QPushButton):
     def __init__(self, text="",
                  image_path=None,
                  image_size=None,
+                 image_rotate=0,
                  color_default=QColor("#FFFFFF"),
                  border_default=1,
                  radius_default=5,
@@ -74,6 +75,8 @@ class PushButton(QPushButton):
                 Qt.IgnoreAspectRatio,
                 Qt.SmoothTransformation
             )
+            if image_rotate != 0:
+                scaled_pixmap = scaled_pixmap.transformed(QTransform().rotate(image_rotate))
             self.setIcon(QIcon(scaled_pixmap))
             # self.setIcon(QIcon(img_path))
             if image_size is not None:

@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QListWidget, QVBoxLayout, QHBoxLayout, QLis
 from src.collection.collection import Collection, CollectionType
 from src.collection.collection_manager import CollectionManager
 from src.frame_picker import FramePicker
+from src.utils.utils import Utils
 from ui.pages.custom_widget.custom_thread import DownLoadThread
 from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox, NewCollectionDialog
 from ui.pages.custom_widget.decode.file_open_button import FileOpenButton
@@ -299,8 +300,12 @@ class CollectionWidget(QWidget):
 
         dlg = DownLoadFrameDialog(collection_name)
         if dlg.exec_() == QDialog.Accepted:
-            file_path, file_name, file_format = dlg.values()
+            file_path, file_name, file_format, all_in_one = dlg.values()
             if not file_path or not file_name or not file_name: return
+
+            if all_in_one and all_in_one[0] and all_in_one[1] > 0:
+                frames = [Utils.all_frames_in_one_picture(frames, all_in_one[1])]
+                frame_count = 1
 
             self.prg = ProgressDialog(
                 f"DownLoad {collection_name}:",

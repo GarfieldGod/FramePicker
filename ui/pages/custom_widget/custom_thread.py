@@ -82,49 +82,72 @@ class NanoPrecisionPlayThread(QThread):
         self.fps = fps
 
         self._is_playing = False
+        self.is_loop = False
         self.start_index = 0
         self.current_index = 0
         self.start_nano = 0
 
-    def start_play(self, total_frames, fps, start_index):
-        if self.total_frames == 0 or start_index >= total_frames:
-            return
-        self.total_frames = total_frames
-        self.fps = fps
-        self.current_index = start_index
-        self.start_index = start_index
-        self._is_playing = True
-        self.start_nano = time.perf_counter_ns()
-        self.start()
-        print(f"Thread Start Play")
+    def start_play(self, total_frames, fps, start_index, is_loop):
+        try:
+            if self.total_frames == 0 or start_index >= total_frames:
+                return
+
+            self.total_frames = total_frames
+            self.fps = fps
+
+            self._is_playing = True
+            self.is_loop = is_loop
+            self.start_index = start_index
+            self.current_index = start_index
+            self.start_nano = time.perf_counter_ns()
+
+            self.start()
+            print(f"Play Thread Start")
+        except Exception as e:
+            print(f"NanoPrecisionPlayThread Start Play Failed: {e}")
 
     def stop_play(self):
-        self._is_playing = False
-        self.total_frames = None
-        self.fps = None
-        self.start_index = 0
-        self.current_index = 0
-        self.wait()
-        print(f"Thread Stop Play")
+        try:
+            stop_index = self.current_index
+
+            self._is_playing = False
+            self.is_loop = False
+            self.total_frames = None
+            self.fps = None
+            self.start_index = 0
+            self.current_index = 0
+            self.wait()
+            print(f"Play Thread Stop")
+            return stop_index
+        except Exception as e:
+            print(f"NanoPrecisionPlayThread Stop Play Failed: {e}")
+            return -1
 
     def run(self):
-        if not self.total_frames or not self.fps or self.fps == 0: return
+        try:
+            if not self.total_frames or not self.fps or self.fps == 0: return
 
-        while self._is_playing and self.current_index < self.total_frames:
-            target_nano = self.start_nano + (self.current_index - self.start_index) * (1_000_000_000 / self.fps)
+            while self._is_playing and (self.is_loop or self.current_index < self.total_frames):
+                target_nano = self.start_nano + (self.current_index - self.start_index) * (1_000_000_000 / self.fps)
 
-            current_nano = time.perf_counter_ns()
+                current_nano = time.perf_counter_ns()
 
-            if current_nano < target_nano:
-                delta_nano = target_nano - current_nano
-                if delta_nano > 1_000_000:
-                    time.sleep((delta_nano - 500_000) / 1_000_000_000)
-                while time.perf_counter_ns() < target_nano and self._is_playing:
-                    pass
+                if current_nano < target_nano:
+                    delta_nano = target_nano - current_nano
+                    if delta_nano > 1_000_000:
+                        time.sleep((delta_nano - 500_000) / 1_000_000_000)
+                    while time.perf_counter_ns() < target_nano and self._is_playing:
+                        pass
+
+                if self._is_playing:
+                    self.next_frame_index.emit(self.current_index % self.total_frames)
+                    self.current_index += 1
+
+            if self.current_index == self.total_frames:
+                self.current_index = self.total_frames - 1
 
             if self._is_playing:
-                self.next_frame_index.emit(self.current_index)
-                self.current_index += 1
-
-        self._is_playing = False
-        self.play_finished.emit()
+                self._is_playing = False
+                self.play_finished.emit()
+        except Exception as e:
+            print(f"NanoPrecisionPlayThread Run Play Failed: {e}")

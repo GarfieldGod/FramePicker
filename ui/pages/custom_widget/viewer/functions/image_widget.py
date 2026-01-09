@@ -29,11 +29,16 @@ class CropLabel(QLabel):
         self.is_resizing = False
         self.resize_value = None
 
+        self.is_flipping = False
+        self.flip_type = None
+
     def set_image(self, cv_frame):
         if cv_frame is None or cv_frame.size == 0:
             return
 
         cv_frame = self.resize_image(cv_frame)
+
+        cv_frame = self.flip_image(cv_frame)
 
         orig_h, orig_w = cv_frame.shape[:2]
 
@@ -400,6 +405,11 @@ class CropLabel(QLabel):
         cv_frame = cv2.resize(cv_frame, self.resize_value, interpolation=cv2.INTER_AREA)
         return cv_frame
 
+    def flip_image(self, cv_frame):
+        if self.flip_type is None: return cv_frame
+        cv_frame = cv2.flip(cv_frame, self.flip_type)
+        return cv_frame
+
     def set_ratio(self, ratio):
         try:
             if (not isinstance(ratio, float) and ratio is not None) or ratio == 0:
@@ -419,6 +429,19 @@ class CropLabel(QLabel):
             self.update()
         except Exception as e:
             print(f"set size failed: {e}")
+
+    def set_flip(self, flip_type):
+        try:
+            print(self.flip_type)
+            if flip_type in [None, -1, 0, 1]:
+                if self.flip_type == flip_type:
+                    self.flip_type = None
+                else:
+                    self.flip_type = flip_type
+
+            self.update()
+        except Exception as e:
+            print(f"set flip failed: {e}")
 
 class MainWindow(QWidget):
     def __init__(self):

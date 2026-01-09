@@ -1,6 +1,6 @@
 import time
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIntValidator
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QLineEdit, QHBoxLayout
 
 from src.collection.collection_manager import CollectionManager
@@ -22,12 +22,15 @@ class FrameViewer(QWidget):
 
         self.max_index_label = QLabel()
         self.min_index_label = QLabel()
+        int_validator = QIntValidator()
         self.current_index_label = QLineEdit()
+        self.current_index_label.setValidator(int_validator)
 
         self.frame_slider = QSlider(Qt.Horizontal)
 
         self.nano_play_thread = NanoPrecisionPlayThread(total_frames=None, fps=None, parent=self)
         self.nano_play_thread.next_frame_index.connect(self.play_next_frame)
+        self.nano_play_thread.play_finished.connect(self.stop_playing)
 
         self.init_ui()
         self.init_layout()
@@ -98,10 +101,16 @@ class FrameViewer(QWidget):
 
     def on_slider_value_changed(self):
         try:
-            value = self.frame_slider.value()
+            if self.current_index_label.text():
+                value = int(self.current_index_label.text()) - 1
+            else:
+                value = 0
+
             if self.collection_v is not None:
-                if value < 0 or value >= len(self.collection_v.frames):
-                    return
+                if value < 0:
+                    value = 0
+                if value >= len(self.collection_v.frames):
+                    value = len(self.collection_v.frames) - 1
                 self.frame_slider.setValue(value)
                 self.show_frame(value)
         except Exception as e:
@@ -130,7 +139,7 @@ class FrameViewer(QWidget):
         self.collection_v = None
         self.update_viewer()
 
-    def play_collection(self, fps: float, start_index: int):
+    def play_collection(self, fps: float, start_index: int, is_loop: bool):
         if self.collection_v is None: return False
         try:
             total_frame = len(self.collection_v.frames)
@@ -144,7 +153,7 @@ class FrameViewer(QWidget):
             self.start_time = time.perf_counter_ns()
             self.start_frame_index = current_index
 
-            self.nano_play_thread.start_play(total_frame, fps, current_index)
+            self.nano_play_thread.start_play(total_frame, fps, current_index, is_loop)
             return True
         except Exception as e:
             print(f"Play Collection Failed: {e}")
@@ -152,21 +161,29 @@ class FrameViewer(QWidget):
 
     def play_next_frame(self, index):
         try:
-            next_index = int(self.frame_slider.value() + 1)
-            total_frame = len(self.collection_v.frames)
-            if not self.collection_v or total_frame <= next_index:
-                self.stop_playing()
-                return
+            # total_frame = len(self.collection_v.frames)
+            # next_index = int(self.frame_slider.value() + 1) % total_frame
+            # if not self.collection_v or total_frame - 1 < next_index:
+            #     self.stop_playing()
+            #     return
 
-            self.frame_slider.setValue(next_index)
+            # self.frame_slider.setValue(next_index)
+
+            self.frame_slider.setValue(index)
         except Exception as e:
             print(f"Play Next Frame Failed: {e}")
 
     def stop_playing(self):
-        if not hasattr(self, 'start_frame_index'): return
-        self.nano_play_thread.stop_play()
-        total_frame = len(self.collection_v.frames)
-        print(f"Total Frame: {total_frame}, Played Frames={total_frame - 1 - self.start_frame_index}, Start At: {self.start_frame_index + 1}")
-        theoretically_total_ms = (total_frame - self.start_frame_index - 1) / self.collection_v.fps * 1000
-        actually_total_ms = (time.perf_counter_ns() - self.start_time) / 1_000_000
-        print(f"Theoretically Cost: {theoretically_total_ms:.2f} ms, Actually Cost={actually_total_ms:.2f} ms")
+        try:
+            stop_index = self.nano_play_thread.stop_play()
+
+            if not hasattr(self, 'start_frame_index'): return
+            total_frame = len(self.collection_v.frames)
+            played_frames = stop_index - self.start_frame_index + 1
+            print(f"Start At: {self.start_frame_index} Stop At: {stop_index}")
+            print(f"Total Frame: {total_frame}, Played Frames={played_frames}")
+            theoretically_total_ms = (played_frames - 1) / self.collection_v.fps * 1000
+            actually_total_ms = (time.perf_counter_ns() - self.start_time) / 1_000_000
+            print(f"Theoretically Cost: {theoretically_total_ms:.2f} ms, Actually Cost={actually_total_ms:.2f} ms")
+        except Exception as e:
+            print(f"Stop viewer Play failed. {e}")

@@ -1,9 +1,13 @@
 import os
 import sys
+import webbrowser
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog
 
+from src.utils.const import WebPath
+from src.utils.update import AppUpdater
+from ui.pages.custom_widget.custom_dialog import MessageBox
 from ui.pages.ui_page_select import FrameSelectorPage
 from ui.template.ui_custom_function import get_ui_resource_path
 from ui.template.ui_main_window import MainWindow
@@ -14,10 +18,21 @@ def init_page_list(w):
     con_frame_selector = FrameSelectorPage(6,5)
     w.add_page(nav_frame_selector, con_frame_selector)
 
+def on_update(ok, ver):
+    if ok:
+        dlg = MessageBox(
+            f"There is a new version for the app:\t\n\n"
+            f"Local: {ver.get('local')} Newest: {ver.get('remote')}\t\n\n"
+            f"Do you want to download new ?\t"
+        )
+        if dlg.exec_() == QDialog.Accepted:
+            webbrowser.open_new(WebPath.AppProjectPath)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setAttribute(Qt.AA_EnableHighDpiScaling)
     app.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    updater = AppUpdater(on_update)
     window = MainWindow(
         title_text="Frame Picker",
         title_desc="--Pick Your Frames from AI-Generated Videos",

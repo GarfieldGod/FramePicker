@@ -12,12 +12,22 @@ from ui.template.ui_dialog import Dialog
 
 class DownLoadFrameDialog(Dialog):
     download_format = ["png", "jpeg"]
+    download_type = ["single", "all in one"]
 
     def __init__(self, collection_name, parent=None):
         self.file_path = QLineEdit(os.path.join(os.path.abspath("."), "output", collection_name))
         self.file_name = QLineEdit("default")
         self.file_format = QComboBox()
         self.file_format.addItems(self.download_format)
+        self.file_type = QComboBox()
+        self.file_type.addItems(self.download_type)
+        self.file_type.currentIndexChanged.connect(self.download_type_changed)
+        int_validator = QIntValidator()
+        self.columns_num = QLineEdit("8")
+        self.columns_num.setValidator(int_validator)
+        self.columns_num.hide()
+        self.columns_num_label = QLabel("Columns Num:")
+        self.columns_num_label.hide()
 
         super().__init__(title_text="DownLoad Frame:", parent=parent)
 
@@ -31,9 +41,21 @@ class DownLoadFrameDialog(Dialog):
         layout_content.addWidget(self.file_name)
         layout_content.addWidget(QLabel("File Format:"))
         layout_content.addWidget(self.file_format)
+        layout_content.addWidget(QLabel("Download Type:"))
+        layout_content.addWidget(self.file_type)
+        layout_content.addWidget(self.columns_num_label)
+        layout_content.addWidget(self.columns_num)
+
+    def download_type_changed(self, index):
+        if index == 1:
+            self.columns_num_label.show()
+            self.columns_num.show()
+        else:
+            self.columns_num_label.hide()
+            self.columns_num.hide()
 
     def values(self):
-        return self.file_path.text(), self.file_name.text(), self.file_format.currentText()
+        return self.file_path.text(), self.file_name.text(), self.file_format.currentText(), (self.file_type.currentText() == self.download_type[1], int(self.columns_num.text()))
 
 class ProgressDialog(Dialog):
     current_value = 0
