@@ -1,5 +1,10 @@
+import os
+import sys
+import json
 import cv2
 import numpy as np
+
+from src.utils.log import Log
 
 class Utils:
     @staticmethod
@@ -34,3 +39,15 @@ class Utils:
         final_grid_img = cv2.vconcat(grid_rows)
 
         return final_grid_img
+
+    @staticmethod
+    def read_dict_from_json(file_path):
+        if not os.path.exists(file_path):
+            return None
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                dict_list = json.load(f)
+                return dict_list
+        except Exception as e:
+            Log.info(f"Load {file_path} failed. error: {e}")
+            return None

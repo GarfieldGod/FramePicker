@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QListWidget, QVBoxLayout, QHBoxLayout, QLis
 from src.collection.collection import Collection, CollectionType
 from src.collection.collection_manager import CollectionManager
 from src.frame_picker import FramePicker
-from src.utils import Utils
+from src.utils.utils import Utils
 from ui.pages.custom_widget.custom_thread import DownLoadThread
 from ui.pages.custom_widget.custom_dialog import DownLoadFrameDialog, ProgressDialog, MessageBox, NewCollectionDialog
 from ui.pages.custom_widget.decode.file_open_button import FileOpenButton
